@@ -1,12 +1,20 @@
+<!DOCTYPE html>
 
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ローマ字タイピング</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-#app{min-height:560px;background:#08080e;color:#e8e8f0;font-family:'Zen Kaku Gothic New',sans-serif;padding:1.6rem 2rem;position:relative;overflow:hidden}
+body{background:#08080e;min-height:100vh}
+#app{min-height:560px;background:#08080e;color:#e8e8f0;font-family:'Zen Kaku Gothic New',sans-serif;padding:1.6rem 2rem;position:relative;overflow:hidden;max-width:720px;margin:0 auto}
 .grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(180,140,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(180,140,255,0.04)1px,transparent 1px);background-size:40px 40px;pointer-events:none}
 .rel{position:relative;z-index:1}
 .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
 .logo{font-size:17px;font-weight:900;letter-spacing:.18em;color:#b899ff}
+.header-right{display:flex;align-items:center;gap:10px}
+.esc-hint{font-size:11px;color:rgba(184,153,255,.35);letter-spacing:.06em;border:.5px solid rgba(184,153,255,.2);border-radius:4px;padding:2px 7px;font-family:'Share Tech Mono',monospace}
 .stats{display:flex;gap:8px}
 .s{background:rgba(255,255,255,.04);border:.5px solid rgba(184,153,255,.18);border-radius:8px;padding:4px 12px;text-align:center;min-width:68px}
 .s-l{font-size:10px;color:rgba(184,153,255,.5);letter-spacing:.1em;text-transform:uppercase}
@@ -50,24 +58,29 @@
 .pts-pop{position:absolute;font-family:'Share Tech Mono',monospace;font-size:14px;color:#7dfa96;font-weight:700;pointer-events:none;z-index:15;animation:pf .7s ease-out forwards}
 @keyframes pf{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-45px)}}
 .input-info{font-size:11px;color:rgba(184,153,255,.4);text-align:center;margin-top:-.6rem;margin-bottom:.8rem;letter-spacing:.06em}
-.esc-hint{font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.08em;text-align:center;margin-top:.6rem}
-.pause-overlay{position:absolute;inset:0;background:rgba(8,8,14,.92);z-index:25;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem}
-.pause-title{font-size:22px;font-weight:900;letter-spacing:.2em;color:#b899ff}
-.pause-sub{font-size:12px;color:rgba(184,153,255,.5);letter-spacing:.1em}
-.btn-row{display:flex;gap:10px}
-.sec-btn{background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.5);font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;padding:.55rem 1.5rem;cursor:pointer;transition:all .2s}
-.sec-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
+.confirm-overlay{position:absolute;inset:0;background:rgba(8,8,14,.88);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem}
+.confirm-box{background:#0f0f1a;border:.5px solid rgba(184,153,255,.3);border-radius:14px;padding:2rem 2.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center}
+.confirm-box p{font-size:13px;color:rgba(184,153,255,.65);letter-spacing:.06em;line-height:1.8}
+.confirm-btns{display:flex;gap:10px}
+.btn-yes{background:rgba(255,80,80,.12);border:1px solid rgba(255,80,80,.4);border-radius:8px;color:#ff8080;font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;padding:.5rem 1.5rem;cursor:pointer;transition:all .2s}
+.btn-yes:hover{background:rgba(255,80,80,.22)}
+.btn-no{background:rgba(184,153,255,.1);border:1px solid rgba(184,153,255,.35);border-radius:8px;color:#b899ff;font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;padding:.5rem 1.5rem;cursor:pointer;transition:all .2s}
+.btn-no:hover{background:rgba(184,153,255,.2)}
 </style>
-
+</head>
+<body>
 <div id="app">
 <div class="grid-bg"></div>
 <div class="rel">
   <div class="header">
     <div class="logo">ローマ字タイピング</div>
-    <div class="stats">
-      <div class="s"><div class="s-l">スコア</div><div class="s-v" id="sc">0</div></div>
-      <div class="s"><div class="s-l">コンボ</div><div class="s-v" id="cb">0</div></div>
-      <div class="s"><div class="s-l">ミス</div><div class="s-v" id="ms">0</div></div>
+    <div class="header-right">
+      <span class="esc-hint" id="esc-hint" style="display:none">ESC で中断</span>
+      <div class="stats">
+        <div class="s"><div class="s-l">スコア</div><div class="s-v" id="sc">0</div></div>
+        <div class="s"><div class="s-l">コンボ</div><div class="s-v" id="cb">0</div></div>
+        <div class="s"><div class="s-l">ミス</div><div class="s-v" id="ms">0</div></div>
+      </div>
     </div>
   </div>
   <div class="lv-strip">
@@ -85,13 +98,13 @@
   <input type="text" class="type-input" id="inp" placeholder="どの入力方式でもOK！" autocomplete="off" autocorrect="off" spellcheck="false">
   <div class="input-info">ヘボン式・訓令式・IME式、どれでも正解になります</div>
   <div class="upcoming" id="upcoming"></div>
-  <div class="esc-hint">ESC でタイトルに戻る</div>
 </div>
 
 <div class="overlay" id="start-scr">
   <div class="logo" style="font-size:22px">ローマ字タイピング</div>
-  <p style="font-size:13px;color:rgba(184,153,255,.5);letter-spacing:.06em;text-align:center;line-height:1.9">ヘボン式・訓令式・IME式<br>どの入力方式でも正解になります！<br>レベルアップするほど難しい単語が登場します。</p>
+  <p style="font-size:13px;color:rgba(184,153,255,.5);letter-spacing:.06em;text-align:center;line-height:1.9">ヘボン式・訓令式・IME式<br>どの入力方式でも正解になります！<br>レベルアップするほど難しい単語が登場します。<br><span style="color:rgba(184,153,255,.3)">ゲーム中は ESC でタイトルに戻れます</span></p>
   <button class="start-btn" onclick="startGame()">スタート ▶</button>
+  <div style="font-size:11px;color:rgba(184,153,255,.3);letter-spacing:.1em">Space キーでも開始できます</div>
 </div>
 
 <div class="overlay" id="result-scr" style="display:none">
@@ -104,26 +117,83 @@
     <div class="s"><div class="s-l">精度</div><div class="s-v" id="r-acc">-%</div></div>
   </div>
   <div id="rank-txt" style="font-size:15px;letter-spacing:.1em;color:#b899ff"></div>
-  <div class="btn-row">
-    <button class="start-btn" onclick="startGame()">もう一度</button>
-    <button class="sec-btn" onclick="goTitle()">タイトルへ</button>
-  </div>
+  <button class="start-btn" onclick="startGame()">もう一度</button>
+  <div style="font-size:11px;color:rgba(184,153,255,.3);letter-spacing:.1em">Space キーでも再スタートできます</div>
 </div>
 
-<div class="pause-overlay" id="pause-scr">
-  <div class="pause-title">PAUSED</div>
-  <div class="pause-sub">ESC または Enter で再開</div>
-  <div class="btn-row">
-    <button class="start-btn" onclick="resumeGame()">再開 ▶</button>
-    <button class="sec-btn" onclick="goTitle()">タイトルへ戻る</button>
+<div class="confirm-overlay" id="confirm-scr" style="display:none">
+  <div class="confirm-box">
+    <div style="font-size:16px;font-weight:700;color:#b899ff;letter-spacing:.1em">ゲームを中断しますか？</div>
+    <p>タイトルに戻ると<br>現在のスコアは失われます。</p>
+    <div class="confirm-btns">
+      <button class="btn-yes" onclick="confirmQuit()">やめる</button>
+      <button class="btn-no" onclick="cancelQuit()">続ける（ESC）</button>
+    </div>
   </div>
 </div>
 </div>
 
 <script>
-const KANA_MAP={'あ':['a'],'い':['i'],'う':['u','wu'],'え':['e'],'お':['o'],'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],'や':['ya'],'ゆ':['yu'],'よ':['yo'],'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],'わ':['wa'],'を':['wo','o'],'ん':['nn','n','xn'],'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],'だ':['da'],'ぢ':['di','ji'],'づ':['du','zu'],'で':['de'],'ど':['do'],'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しょ':['sho','syo'],'ちゃ':['cha','tya','cya'],'ちゅ':['chu','tyu','cyu'],'ちょ':['cho','tyo','cyo'],'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],'ふぁ':['fa'],'ふぃ':['fi'],'ふぇ':['fe'],'ふぉ':['fo'],'っ':['ltu','xtu','ltsu'],'ア':['a'],'イ':['i'],'ウ':['u'],'エ':['e'],'オ':['o'],'カ':['ka'],'キ':['ki'],'ク':['ku'],'ケ':['ke'],'コ':['ko'],'サ':['sa'],'シ':['si','shi'],'ス':['su'],'セ':['se'],'ソ':['so'],'タ':['ta'],'チ':['ti','chi'],'ツ':['tu','tsu'],'テ':['te'],'ト':['to'],'ナ':['na'],'ニ':['ni'],'ヌ':['nu'],'ネ':['ne'],'ノ':['no'],'ハ':['ha'],'ヒ':['hi'],'フ':['fu','hu'],'ヘ':['he'],'ホ':['ho'],'マ':['ma'],'ミ':['mi'],'ム':['mu'],'メ':['me'],'モ':['mo'],'ヤ':['ya'],'ユ':['yu'],'ヨ':['yo'],'ラ':['ra'],'リ':['ri'],'ル':['ru'],'レ':['re'],'ロ':['ro'],'ワ':['wa'],'ヲ':['wo'],'ン':['nn','n'],'ガ':['ga'],'ギ':['gi'],'グ':['gu'],'ゲ':['ge'],'ゴ':['go'],'ザ':['za'],'ジ':['zi','ji'],'ズ':['zu'],'ゼ':['ze'],'ゾ':['zo'],'ダ':['da'],'デ':['de'],'ド':['do'],'バ':['ba'],'ビ':['bi'],'ブ':['bu'],'ベ':['be'],'ボ':['bo'],'パ':['pa'],'ピ':['pi'],'プ':['pu'],'ペ':['pe'],'ポ':['po'],'キャ':['kya'],'キュ':['kyu'],'キョ':['kyo'],'シャ':['sha','sya'],'シュ':['shu','syu'],'ショ':['sho','syo'],'チャ':['cha','tya'],'チュ':['chu','tyu'],'チョ':['cho','tyo'],'ニャ':['nya'],'ニュ':['nyu'],'ニョ':['nyo'],'ヒャ':['hya'],'ヒュ':['hyu'],'ヒョ':['hyo'],'ミャ':['mya'],'ミュ':['myu'],'ミョ':['myo'],'リャ':['rya'],'リュ':['ryu'],'リョ':['ryo'],'ギャ':['gya'],'ギュ':['gyu'],'ギョ':['gyo'],'ジャ':['ja','jya','zya'],'ジュ':['ju','jyu','zyu'],'ジョ':['jo','jyo','zyo'],'ビャ':['bya'],'ビュ':['byu'],'ビョ':['byo'],'ピャ':['pya'],'ピュ':['pyu'],'ピョ':['pyo'],'ファ':['fa'],'フィ':['fi'],'フェ':['fe'],'フォ':['fo'],'ッ':['ltu','xtu'],'ー':['_','-']};
+const KANA_MAP={
+  'あ':['a'],'い':['i'],'う':['u','wu'],'え':['e'],'お':['o'],
+  'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],
+  'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],
+  'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],
+  'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+  'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],
+  'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+  'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+  'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+  'わ':['wa'],'を':['wo','o'],'ん':['nn','n','xn'],
+  'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+  'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+  'だ':['da'],'ぢ':['di','ji'],'づ':['du','zu'],'で':['de'],'ど':['do'],
+  'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+  'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+  'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],
+  'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しょ':['sho','syo'],
+  'ちゃ':['cha','tya','cya'],'ちゅ':['chu','tyu','cyu'],'ちょ':['cho','tyo','cyo'],
+  'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],
+  'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],
+  'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],
+  'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],
+  'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],
+  'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],
+  'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],
+  'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],
+  'ふぁ':['fa'],'ふぃ':['fi'],'ふぇ':['fe'],'ふぉ':['fo'],
+  'っ':['ltu','xtu','ltsu'],
+  'ア':['a'],'イ':['i'],'ウ':['u'],'エ':['e'],'オ':['o'],
+  'カ':['ka'],'キ':['ki'],'ク':['ku'],'ケ':['ke'],'コ':['ko'],
+  'サ':['sa'],'シ':['si','shi'],'ス':['su'],'セ':['se'],'ソ':['so'],
+  'タ':['ta'],'チ':['ti','chi'],'ツ':['tu','tsu'],'テ':['te'],'ト':['to'],
+  'ナ':['na'],'ニ':['ni'],'ヌ':['nu'],'ネ':['ne'],'ノ':['no'],
+  'ハ':['ha'],'ヒ':['hi'],'フ':['fu','hu'],'ヘ':['he'],'ホ':['ho'],
+  'マ':['ma'],'ミ':['mi'],'ム':['mu'],'メ':['me'],'モ':['mo'],
+  'ヤ':['ya'],'ユ':['yu'],'ヨ':['yo'],
+  'ラ':['ra'],'リ':['ri'],'ル':['ru'],'レ':['re'],'ロ':['ro'],
+  'ワ':['wa'],'ヲ':['wo'],'ン':['nn','n'],
+  'ガ':['ga'],'ギ':['gi'],'グ':['gu'],'ゲ':['ge'],'ゴ':['go'],
+  'ザ':['za'],'ジ':['zi','ji'],'ズ':['zu'],'ゼ':['ze'],'ゾ':['zo'],
+  'ダ':['da'],'デ':['de'],'ド':['do'],
+  'バ':['ba'],'ビ':['bi'],'ブ':['bu'],'ベ':['be'],'ボ':['bo'],
+  'パ':['pa'],'ピ':['pi'],'プ':['pu'],'ペ':['pe'],'ポ':['po'],
+  'キャ':['kya'],'キュ':['kyu'],'キョ':['kyo'],
+  'シャ':['sha','sya'],'シュ':['shu','syu'],'ショ':['sho','syo'],
+  'チャ':['cha','tya'],'チュ':['chu','tyu'],'チョ':['cho','tyo'],
+  'ニャ':['nya'],'ニュ':['nyu'],'ニョ':['nyo'],
+  'ヒャ':['hya'],'ヒュ':['hyu'],'ヒョ':['hyo'],
+  'ミャ':['mya'],'ミュ':['myu'],'ミョ':['myo'],
+  'リャ':['rya'],'リュ':['ryu'],'リョ':['ryo'],
+  'ギャ':['gya'],'ギュ':['gyu'],'ギョ':['gyo'],
+  'ジャ':['ja','jya','zya'],'ジュ':['ju','jyu','zyu'],'ジョ':['jo','jyo','zyo'],
+  'ビャ':['bya'],'ビュ':['byu'],'ビョ':['byo'],
+  'ピャ':['pya'],'ピュ':['pyu'],'ピョ':['pyo'],
+  'ファ':['fa'],'フィ':['fi'],'フェ':['fe'],'フォ':['fo'],
+  'ッ':['ltu','xtu'],'ー':['_','-'],
+};
 
-function kanaToRomajiVariants(kana){
+function kanaToVariants(kana){
   const variants=[''];
   let i=0;
   while(i<kana.length){
@@ -140,12 +210,12 @@ function kanaToRomajiVariants(kana){
     if(!matched){
       const ch=kana[i];
       if((ch==='っ'||ch==='ッ')&&kana[i+1]){
-        const nk=KANA_MAP[kana[i+1]]||KANA_MAP[(kana[i+1]+(kana[i+2]||''))];
+        const nk=KANA_MAP[kana[i+1]]||KANA_MAP[kana[i+1]+(kana[i+2]||'')];
         const cons=[];
         if(nk)for(const r of nk)if(r[0]&&!'aeiou'.includes(r[0]))cons.push(r[0]);
-        if(cons.length>0){
+        if(cons.length){
           const nv=[];
-          for(const v of variants)for(const c of [...new Set(cons)])nv.push(v+c);
+          for(const v of variants)for(const c of[...new Set(cons)])nv.push(v+c);
           variants.length=0;variants.push(...nv);
           i++;matched=true;
         }
@@ -155,14 +225,14 @@ function kanaToRomajiVariants(kana){
           const nv=[];
           for(const v of variants)for(const r of KANA_MAP[ch])nv.push(v+r);
           variants.length=0;variants.push(...nv);
-        } else {
+        }else{
           for(let j=0;j<variants.length;j++)variants[j]+=ch;
         }
         i++;
       }
     }
   }
-  return [...new Set(variants)];
+  return[...new Set(variants)];
 }
 
 const XP_TABLE=[0,5,8,10,12,15,18,20,22,25];
@@ -182,16 +252,30 @@ const ALL_WORDS=[
 
 let G={};
 
-function initState(){G={running:false,paused:false,score:0,combo:0,miss:0,correct:0,totalKeys:0,level:1,xp:0,timer:GAME_TIME,pool:[],wordIdx:0,words:[],current:null,interval:null};}
-function wordsForLevel(lv){const mn=Math.max(1,lv-1),mx=Math.min(6,lv+1);return ALL_WORDS.filter(w=>w.l>=mn&&w.l<=mx);}
+function initState(){
+  G={running:false,paused:false,score:0,combo:0,miss:0,correct:0,totalKeys:0,level:1,xp:0,timer:GAME_TIME,pool:[],wordIdx:0,words:[],current:null,interval:null};
+}
+
+function wordsForLevel(lv){
+  const mn=Math.max(1,lv-1),mx=Math.min(6,lv+1);
+  return ALL_WORDS.filter(w=>w.l>=mn&&w.l<=mx);
+}
+
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+
 function buildPool(){G.pool=shuffle(wordsForLevel(G.level));G.wordIdx=0;}
-function nextWord(){if(G.wordIdx>=G.pool.length)buildPool();const w=G.pool[G.wordIdx++];return{...w,variants:kanaToRomajiVariants(w.w)};}
+
+function nextWord(){
+  if(G.wordIdx>=G.pool.length)buildPool();
+  const w=G.pool[G.wordIdx++];
+  return{...w,variants:kanaToVariants(w.w)};
+}
 
 function startGame(){
   document.getElementById('start-scr').style.display='none';
   document.getElementById('result-scr').style.display='none';
-  document.getElementById('pause-scr').style.display='none';
+  document.getElementById('confirm-scr').style.display='none';
+  document.getElementById('esc-hint').style.display='inline';
   initState();
   G.running=true;
   buildPool();
@@ -204,38 +288,8 @@ function startGame(){
   G.interval=setInterval(tick,100);
 }
 
-function goTitle(){
-  clearInterval(G.interval);
-  G.running=false;G.paused=false;
-  document.getElementById('pause-scr').style.display='none';
-  document.getElementById('result-scr').style.display='none';
-  document.getElementById('start-scr').style.display='flex';
-  document.getElementById('tf').style.width='100%';
-  document.getElementById('tf').className='timer-fill';
-  document.getElementById('kana').textContent='—';
-  document.getElementById('rom').innerHTML='';
-  document.getElementById('acc-row').innerHTML='';
-  document.getElementById('upcoming').innerHTML='';
-  document.getElementById('inp').value='';
-}
-
-function pauseGame(){
-  if(!G.running||G.paused)return;
-  G.paused=true;
-  clearInterval(G.interval);
-  document.getElementById('inp').blur();
-  document.getElementById('pause-scr').style.display='flex';
-}
-
-function resumeGame(){
-  if(!G.paused)return;
-  G.paused=false;
-  document.getElementById('pause-scr').style.display='none';
-  document.getElementById('inp').focus();
-  G.interval=setInterval(tick,100);
-}
-
 function tick(){
+  if(G.paused)return;
   G.timer-=0.1;
   if(G.timer<=0){G.timer=0;endGame();return;}
   const pct=(G.timer/GAME_TIME)*100;
@@ -258,33 +312,45 @@ function renderAll(){
 }
 
 function renderAccepted(typed){
-  const el=document.getElementById('acc-row');el.innerHTML='';
-  G.current.variants.slice(0,6).forEach(v=>{
+  const el=document.getElementById('acc-row');
+  el.innerHTML='';
+  const shown=G.current.variants.slice(0,6);
+  for(const v of shown){
     const d=document.createElement('div');
     d.className='acc-chip'+(v.startsWith(typed)&&typed.length>0?' match':'');
-    d.textContent=v;el.appendChild(d);
-  });
+    d.textContent=v;
+    el.appendChild(d);
+  }
 }
 
 function renderRomaji(typed){
-  const best=G.current.variants.find(v=>v.startsWith(typed))||G.current.variants[0];
+  const candidates=G.current.variants.filter(v=>v.startsWith(typed));
+  const best=candidates[0]||G.current.variants[0];
   const n=typed.length;
-  document.getElementById('rom').innerHTML='<span class="rt">'+best.slice(0,n)+'</span><span class="rc">'+(best[n]||'')+'</span><span class="rr">'+best.slice(n+1)+'</span>';
+  document.getElementById('rom').innerHTML=
+    '<span class="rt">'+best.slice(0,n)+'</span>'+
+    '<span class="rc">'+(best[n]||'')+'</span>'+
+    '<span class="rr">'+best.slice(n+1)+'</span>';
 }
 
 function renderUpcoming(){
-  const el=document.getElementById('upcoming');el.innerHTML='';
+  const el=document.getElementById('upcoming');
+  el.innerHTML='';
   G.words.forEach((w,i)=>{
     const d=document.createElement('div');
     d.className='chip'+(i===0?' cur':'');
-    d.textContent=w.variants[0];el.appendChild(d);
+    d.textContent=w.variants[0];
+    el.appendChild(d);
   });
 }
 
 function gainXP(amount){
   G.xp+=amount;
   const needed=XP_TABLE[Math.min(G.level,XP_TABLE.length-1)]||25;
-  if(G.xp>=needed&&G.level<10){G.xp-=needed;G.level++;buildPool();document.getElementById('kana').style.color='#b899ff';setTimeout(()=>{document.getElementById('kana').style.color='#fff';},400);}
+  if(G.xp>=needed&&G.level<10){G.xp-=needed;G.level++;buildPool();
+    const el=document.getElementById('kana');el.style.color='#b899ff';
+    setTimeout(()=>{el.style.color='#fff';},400);
+  }
 }
 
 function spawnPts(pts){
@@ -295,22 +361,53 @@ function spawnPts(pts){
   app.appendChild(p);setTimeout(()=>p.remove(),750);
 }
 
-const inp=document.getElementById('inp');
+function showConfirm(){
+  G.paused=true;
+  document.getElementById('confirm-scr').style.display='flex';
+  document.getElementById('inp').blur();
+}
 
-inp.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){
-    e.preventDefault();
-    if(G.running&&!G.paused) pauseGame();
-    else if(G.paused) resumeGame();
-  }
-});
+function cancelQuit(){
+  G.paused=false;
+  document.getElementById('confirm-scr').style.display='none';
+  document.getElementById('inp').focus();
+}
+
+function confirmQuit(){
+  clearInterval(G.interval);
+  G.running=false;G.paused=false;
+  document.getElementById('confirm-scr').style.display='none';
+  document.getElementById('esc-hint').style.display='none';
+  document.getElementById('start-scr').style.display='flex';
+  document.getElementById('tf').style.width='100%';
+  document.getElementById('tf').className='timer-fill';
+  document.getElementById('kana').textContent='—';
+  document.getElementById('rom').innerHTML='';
+  document.getElementById('acc-row').innerHTML='';
+  document.getElementById('upcoming').innerHTML='';
+  document.getElementById('inp').value='';
+}
 
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){
-    if(G.running&&!G.paused) pauseGame();
-    else if(G.paused) resumeGame();
+    e.preventDefault();
+    if(G.running&&!G.paused){showConfirm();return;}
+    if(G.paused){cancelQuit();return;}
   }
-  if(e.key==='Enter'&&G.paused) resumeGame();
+  if(e.key===' '){
+    const startScr=document.getElementById('start-scr');
+    const resultScr=document.getElementById('result-scr');
+    if(startScr.style.display!=='none'||resultScr.style.display!=='none'){
+      e.preventDefault();
+      startGame();
+      return;
+    }
+  }
+});
+
+const inp=document.getElementById('inp');
+inp.addEventListener('keydown',function(e){
+  if(e.key==='Escape')e.preventDefault();
 });
 
 inp.addEventListener('input',function(){
@@ -325,15 +422,17 @@ inp.addEventListener('input',function(){
     renderRomaji(val);renderAccepted(val);
     if(exact){
       G.combo++;G.correct++;gainXP(G.current.l);
-      const pts=(G.current.l*10)+(Math.floor(G.combo/3)*5);
-      G.score+=pts;G.timer=Math.min(GAME_TIME,G.timer+1.5);
+      const bonus=Math.floor(G.combo/3);
+      const pts=(G.current.l*10)+(bonus*5);
+      G.score+=pts;
+      G.timer=Math.min(GAME_TIME,G.timer+1.5);
       spawnPts(pts);
       const kEl=document.getElementById('kana');
       kEl.classList.remove('shake','ok');void kEl.offsetWidth;kEl.classList.add('ok');
       G.words.shift();G.words.push(nextWord());G.current=G.words[0];
       this.value='';renderAll();
     }
-  } else {
+  }else{
     this.classList.add('err');
     G.miss++;G.combo=0;
     document.getElementById('cb').textContent=0;
@@ -346,17 +445,23 @@ inp.addEventListener('input',function(){
 });
 
 function endGame(){
-  clearInterval(G.interval);G.running=false;inp.blur();
+  clearInterval(G.interval);G.running=false;
+  document.getElementById('esc-hint').style.display='none';
+  inp.blur();
   document.getElementById('fin-sc').textContent=G.score;
   document.getElementById('fin-lv').textContent='Lv.'+G.level+' 到達';
   document.getElementById('r-cor').textContent=G.correct;
   document.getElementById('r-mis').textContent=G.miss;
   const tot=G.correct+G.miss;
-  document.getElementById('r-acc').textContent=(tot>0?Math.round((G.correct/tot)*100):0)+'%';
+  const acc=tot>0?Math.round((G.correct/tot)*100):0;
+  document.getElementById('r-acc').textContent=acc+'%';
   const ranks=[[200,'👑 神レベル'],[120,'⭐ すごい！'],[70,'👍 よくできました'],[30,'💪 もっとがんばれ'],[0,'🌱 練習あるのみ']];
   let rank=ranks[ranks.length-1][1];
-  for(const [t,l] of ranks){if(G.score>=t){rank=l;break;}}
+  for(const[t,l]of ranks){if(G.score>=t){rank=l;break;}}
   document.getElementById('rank-txt').textContent=rank;
   document.getElementById('result-scr').style.display='flex';
 }
 </script>
+
+</body>
+</html>
