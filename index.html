@@ -1,268 +1,362 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>タイピングゲームDX</title>
 
 <style>
-body {
-  font-family: sans-serif;
-  text-align: center;
-  background: #111;
-  color: white;
-}
-
-.game {
-  margin-top: 40px;
-}
-
-#jpWord {
-  font-size: 32px;
-  margin: 10px;
-}
-
-#romaWord {
-  font-size: 16px;
-  color: #aaa;
-}
-
-input {
-  padding: 12px;
-  font-size: 18px;
-  width: 80%;
-  max-width: 320px;
-}
-
-button {
-  margin-top: 20px;
-  padding: 10px 25px;
-  font-size: 18px;
-  background: #00c853;
-  border: none;
-  border-radius: 5px;
-  color: white;
-}
-
-.info {
-  margin-top: 20px;
-}
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+#app{min-height:560px;background:#08080e;color:#e8e8f0;font-family:'Zen Kaku Gothic New',sans-serif;padding:1.6rem 2rem;position:relative;overflow:hidden}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(180,140,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(180,140,255,0.04)1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.rel{position:relative;z-index:1}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.logo{font-size:17px;font-weight:900;letter-spacing:.18em;color:#b899ff}
+.stats{display:flex;gap:8px}
+.s{background:rgba(255,255,255,.04);border:.5px solid rgba(184,153,255,.18);border-radius:8px;padding:4px 12px;text-align:center;min-width:68px}
+.s-l{font-size:10px;color:rgba(184,153,255,.5);letter-spacing:.1em;text-transform:uppercase}
+.s-v{font-family:'Share Tech Mono',monospace;font-size:21px;color:#b899ff}
+.lv-strip{display:flex;align-items:center;gap:10px;margin-bottom:.8rem}
+.lv-label{font-size:12px;color:rgba(184,153,255,.5);letter-spacing:.08em;white-space:nowrap}
+.lv-bar-bg{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.lv-bar{height:100%;background:#b899ff;border-radius:3px;transition:width .4s ease}
+.lv-num{font-family:'Share Tech Mono',monospace;font-size:12px;color:#b899ff;min-width:28px;text-align:right}
+.timer-wrap{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:1.3rem;overflow:hidden}
+.timer-fill{height:100%;background:#b899ff;border-radius:2px;transition:width .1s linear,background .3s}
+.timer-fill.warn{background:#ff9040}
+.timer-fill.danger{background:#ff5050}
+.word-area{text-align:center;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-bottom:1rem}
+.kana{font-size:44px;font-weight:900;letter-spacing:.1em;color:#fff}
+.kana.shake{animation:sk .18s ease}
+.kana.ok{animation:ok .22s ease}
+@keyframes sk{0%,100%{transform:translateX(0)}30%{transform:translateX(-7px)}70%{transform:translateX(7px)}}
+@keyframes ok{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
+.hint-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.hint-badge{font-size:11px;padding:2px 10px;border-radius:20px;border:.5px solid rgba(184,153,255,.3);color:rgba(184,153,255,.6);letter-spacing:.06em}
+.accepted-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:24px}
+.acc-chip{font-family:'Share Tech Mono',monospace;font-size:12px;padding:2px 9px;border-radius:4px;border:.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.35);background:rgba(255,255,255,.03)}
+.acc-chip.match{border-color:rgba(125,250,150,.4);color:#7dfa96;background:rgba(125,250,150,.07)}
+.romaji-line{font-family:'Share Tech Mono',monospace;font-size:24px;letter-spacing:.18em;min-height:32px}
+.rt{color:#7dfa96}.rc{color:#b899ff;animation:bl .7s step-end infinite}.rr{color:rgba(255,255,255,.25)}
+@keyframes bl{50%{opacity:0}}
+.type-input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(184,153,255,.22);border-radius:10px;padding:.75rem 1.2rem;font-family:'Share Tech Mono',monospace;font-size:18px;color:#fff;outline:none;letter-spacing:.1em;caret-color:#b899ff;transition:border-color .2s,box-shadow .2s;margin-bottom:1rem}
+.type-input:focus{border-color:rgba(184,153,255,.55);box-shadow:0 0 0 3px rgba(184,153,255,.07)}
+.type-input.err{border-color:rgba(255,80,80,.5);box-shadow:0 0 0 3px rgba(255,80,80,.07)}
+.upcoming{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:24px}
+.chip{font-size:11px;padding:2px 9px;border-radius:20px;border:.5px solid rgba(255,255,255,.09);color:rgba(255,255,255,.28);font-family:'Share Tech Mono',monospace}
+.chip.cur{border-color:rgba(184,153,255,.5);background:rgba(184,153,255,.12);color:#b899ff}
+.overlay{position:absolute;inset:0;background:#08080e;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem}
+.big-num{font-family:'Share Tech Mono',monospace;font-size:58px;color:#fff;line-height:1}
+.sub-label{font-size:11px;color:rgba(184,153,255,.5);letter-spacing:.15em;text-transform:uppercase}
+.res-row{display:flex;gap:8px}
+.start-btn{background:rgba(184,153,255,.13);border:1px solid rgba(184,153,255,.45);border-radius:10px;color:#b899ff;font-family:'Zen Kaku Gothic New',sans-serif;font-size:14px;font-weight:700;letter-spacing:.15em;padding:.6rem 2rem;cursor:pointer;transition:all .2s}
+.start-btn:hover{background:rgba(184,153,255,.22)}
+.lv-badge{font-size:12px;font-weight:700;letter-spacing:.12em;padding:3px 14px;border-radius:20px;border:.5px solid rgba(184,153,255,.4);background:rgba(184,153,255,.1);color:#b899ff}
+.pts-pop{position:absolute;font-family:'Share Tech Mono',monospace;font-size:14px;color:#7dfa96;font-weight:700;pointer-events:none;z-index:15;animation:pf .7s ease-out forwards}
+@keyframes pf{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-45px)}}
+.input-info{font-size:11px;color:rgba(184,153,255,.4);text-align:center;margin-top:-.6rem;margin-bottom:.8rem;letter-spacing:.06em}
+.esc-hint{font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.08em;text-align:center;margin-top:.6rem}
+.pause-overlay{position:absolute;inset:0;background:rgba(8,8,14,.92);z-index:25;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem}
+.pause-title{font-size:22px;font-weight:900;letter-spacing:.2em;color:#b899ff}
+.pause-sub{font-size:12px;color:rgba(184,153,255,.5);letter-spacing:.1em}
+.btn-row{display:flex;gap:10px}
+.sec-btn{background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.5);font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;padding:.55rem 1.5rem;cursor:pointer;transition:all .2s}
+.sec-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.8)}
 </style>
-</head>
 
-<body>
-
-<div class="game">
-  <h1>⌨️ タイピングゲームDX</h1>
-
-  <p id="jpWord">スタートを押してね</p>
-  <p id="romaWord"></p>
-
-  <input type="text" id="input" placeholder="ローマ字で入力" disabled>
-
-  <div class="info">
-    スコア: <span id="score">0</span> |
-    ハイスコア: <span id="highScore">0</span><br>
-    時間: <span id="time">30</span> |
-    レベル: <span id="level">1</span> |
-    コンボ: <span id="combo">0</span>
+<div id="app">
+<div class="grid-bg"></div>
+<div class="rel">
+  <div class="header">
+    <div class="logo">ローマ字タイピング</div>
+    <div class="stats">
+      <div class="s"><div class="s-l">スコア</div><div class="s-v" id="sc">0</div></div>
+      <div class="s"><div class="s-l">コンボ</div><div class="s-v" id="cb">0</div></div>
+      <div class="s"><div class="s-l">ミス</div><div class="s-v" id="ms">0</div></div>
+    </div>
   </div>
+  <div class="lv-strip">
+    <div class="lv-label">Lv.<span id="lv-num">1</span></div>
+    <div class="lv-bar-bg"><div class="lv-bar" id="lv-bar" style="width:0%"></div></div>
+    <div class="lv-num" id="lv-xp">0/5</div>
+  </div>
+  <div class="timer-wrap"><div class="timer-fill" id="tf" style="width:100%"></div></div>
+  <div class="word-area">
+    <div class="kana" id="kana">—</div>
+    <div class="hint-row"><div class="hint-badge" id="hint-lv">単語 Lv.1</div></div>
+    <div class="accepted-row" id="acc-row"></div>
+    <div class="romaji-line" id="rom"></div>
+  </div>
+  <input type="text" class="type-input" id="inp" placeholder="どの入力方式でもOK！" autocomplete="off" autocorrect="off" spellcheck="false">
+  <div class="input-info">ヘボン式・訓令式・IME式、どれでも正解になります</div>
+  <div class="upcoming" id="upcoming"></div>
+  <div class="esc-hint">ESC でタイトルに戻る</div>
+</div>
 
-  <button onclick="startGame()">スタート</button>
+<div class="overlay" id="start-scr">
+  <div class="logo" style="font-size:22px">ローマ字タイピング</div>
+  <p style="font-size:13px;color:rgba(184,153,255,.5);letter-spacing:.06em;text-align:center;line-height:1.9">ヘボン式・訓令式・IME式<br>どの入力方式でも正解になります！<br>レベルアップするほど難しい単語が登場します。</p>
+  <button class="start-btn" onclick="startGame()">スタート ▶</button>
+</div>
+
+<div class="overlay" id="result-scr" style="display:none">
+  <div class="sub-label">最終スコア</div>
+  <div class="big-num" id="fin-sc">0</div>
+  <div class="lv-badge" id="fin-lv">Lv.1 到達</div>
+  <div class="res-row">
+    <div class="s"><div class="s-l">正解</div><div class="s-v" id="r-cor">0</div></div>
+    <div class="s"><div class="s-l">ミス</div><div class="s-v" id="r-mis">0</div></div>
+    <div class="s"><div class="s-l">精度</div><div class="s-v" id="r-acc">-%</div></div>
+  </div>
+  <div id="rank-txt" style="font-size:15px;letter-spacing:.1em;color:#b899ff"></div>
+  <div class="btn-row">
+    <button class="start-btn" onclick="startGame()">もう一度</button>
+    <button class="sec-btn" onclick="goTitle()">タイトルへ</button>
+  </div>
+</div>
+
+<div class="pause-overlay" id="pause-scr">
+  <div class="pause-title">PAUSED</div>
+  <div class="pause-sub">ESC または Enter で再開</div>
+  <div class="btn-row">
+    <button class="start-btn" onclick="resumeGame()">再開 ▶</button>
+    <button class="sec-btn" onclick="goTitle()">タイトルへ戻る</button>
+  </div>
+</div>
 </div>
 
 <script>
-// =====================
-// 単語
-// =====================
-const words = [
-  "りんご","かんじ","てんき","ほん","ねこ",
-  "すし","しゃしん","がっこう","きょう","しゅくだい"
+const KANA_MAP={'あ':['a'],'い':['i'],'う':['u','wu'],'え':['e'],'お':['o'],'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],'や':['ya'],'ゆ':['yu'],'よ':['yo'],'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],'わ':['wa'],'を':['wo','o'],'ん':['nn','n','xn'],'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],'だ':['da'],'ぢ':['di','ji'],'づ':['du','zu'],'で':['de'],'ど':['do'],'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しょ':['sho','syo'],'ちゃ':['cha','tya','cya'],'ちゅ':['chu','tyu','cyu'],'ちょ':['cho','tyo','cyo'],'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],'ふぁ':['fa'],'ふぃ':['fi'],'ふぇ':['fe'],'ふぉ':['fo'],'っ':['ltu','xtu','ltsu'],'ア':['a'],'イ':['i'],'ウ':['u'],'エ':['e'],'オ':['o'],'カ':['ka'],'キ':['ki'],'ク':['ku'],'ケ':['ke'],'コ':['ko'],'サ':['sa'],'シ':['si','shi'],'ス':['su'],'セ':['se'],'ソ':['so'],'タ':['ta'],'チ':['ti','chi'],'ツ':['tu','tsu'],'テ':['te'],'ト':['to'],'ナ':['na'],'ニ':['ni'],'ヌ':['nu'],'ネ':['ne'],'ノ':['no'],'ハ':['ha'],'ヒ':['hi'],'フ':['fu','hu'],'ヘ':['he'],'ホ':['ho'],'マ':['ma'],'ミ':['mi'],'ム':['mu'],'メ':['me'],'モ':['mo'],'ヤ':['ya'],'ユ':['yu'],'ヨ':['yo'],'ラ':['ra'],'リ':['ri'],'ル':['ru'],'レ':['re'],'ロ':['ro'],'ワ':['wa'],'ヲ':['wo'],'ン':['nn','n'],'ガ':['ga'],'ギ':['gi'],'グ':['gu'],'ゲ':['ge'],'ゴ':['go'],'ザ':['za'],'ジ':['zi','ji'],'ズ':['zu'],'ゼ':['ze'],'ゾ':['zo'],'ダ':['da'],'デ':['de'],'ド':['do'],'バ':['ba'],'ビ':['bi'],'ブ':['bu'],'ベ':['be'],'ボ':['bo'],'パ':['pa'],'ピ':['pi'],'プ':['pu'],'ペ':['pe'],'ポ':['po'],'キャ':['kya'],'キュ':['kyu'],'キョ':['kyo'],'シャ':['sha','sya'],'シュ':['shu','syu'],'ショ':['sho','syo'],'チャ':['cha','tya'],'チュ':['chu','tyu'],'チョ':['cho','tyo'],'ニャ':['nya'],'ニュ':['nyu'],'ニョ':['nyo'],'ヒャ':['hya'],'ヒュ':['hyu'],'ヒョ':['hyo'],'ミャ':['mya'],'ミュ':['myu'],'ミョ':['myo'],'リャ':['rya'],'リュ':['ryu'],'リョ':['ryo'],'ギャ':['gya'],'ギュ':['gyu'],'ギョ':['gyo'],'ジャ':['ja','jya','zya'],'ジュ':['ju','jyu','zyu'],'ジョ':['jo','jyo','zyo'],'ビャ':['bya'],'ビュ':['byu'],'ビョ':['byo'],'ピャ':['pya'],'ピュ':['pyu'],'ピョ':['pyo'],'ファ':['fa'],'フィ':['fi'],'フェ':['fe'],'フォ':['fo'],'ッ':['ltu','xtu'],'ー':['_','-']};
+
+function kanaToRomajiVariants(kana){
+  const variants=[''];
+  let i=0;
+  while(i<kana.length){
+    let matched=false;
+    if(i+1<kana.length){
+      const two=kana[i]+kana[i+1];
+      if(KANA_MAP[two]){
+        const nv=[];
+        for(const v of variants)for(const r of KANA_MAP[two])nv.push(v+r);
+        variants.length=0;variants.push(...nv);
+        i+=2;matched=true;
+      }
+    }
+    if(!matched){
+      const ch=kana[i];
+      if((ch==='っ'||ch==='ッ')&&kana[i+1]){
+        const nk=KANA_MAP[kana[i+1]]||KANA_MAP[(kana[i+1]+(kana[i+2]||''))];
+        const cons=[];
+        if(nk)for(const r of nk)if(r[0]&&!'aeiou'.includes(r[0]))cons.push(r[0]);
+        if(cons.length>0){
+          const nv=[];
+          for(const v of variants)for(const c of [...new Set(cons)])nv.push(v+c);
+          variants.length=0;variants.push(...nv);
+          i++;matched=true;
+        }
+      }
+      if(!matched){
+        if(KANA_MAP[ch]){
+          const nv=[];
+          for(const v of variants)for(const r of KANA_MAP[ch])nv.push(v+r);
+          variants.length=0;variants.push(...nv);
+        } else {
+          for(let j=0;j<variants.length;j++)variants[j]+=ch;
+        }
+        i++;
+      }
+    }
+  }
+  return [...new Set(variants)];
+}
+
+const XP_TABLE=[0,5,8,10,12,15,18,20,22,25];
+const GAME_TIME=30;
+const ALL_WORDS=[
+  {w:'ひ',l:1},{w:'め',l:1},{w:'て',l:1},{w:'に',l:1},{w:'か',l:1},
+  {w:'ねこ',l:1},{w:'いぬ',l:1},{w:'あめ',l:1},{w:'うみ',l:1},{w:'きく',l:1},
+  {w:'みず',l:2},{w:'そら',l:2},{w:'はな',l:2},{w:'つき',l:2},{w:'かぜ',l:2},
+  {w:'ゆき',l:2},{w:'やま',l:2},{w:'しろ',l:2},{w:'くも',l:2},{w:'ひかり',l:2},
+  {w:'さくら',l:3},{w:'でんき',l:3},{w:'たべる',l:3},{w:'あそぶ',l:3},{w:'きれい',l:3},
+  {w:'むらさき',l:3},{w:'ひらがな',l:3},{w:'かたかな',l:3},{w:'しんかい',l:3},{w:'おてら',l:3},
+  {w:'とうきょう',l:4},{w:'にほんご',l:4},{w:'べんきょう',l:4},{w:'おんがく',l:4},{w:'でんしゃ',l:4},
+  {w:'プログラム',l:4},{w:'タイピング',l:4},{w:'コンピュータ',l:4},{w:'インターネット',l:4},{w:'りょうり',l:4},
+  {w:'しんかんせん',l:5},{w:'おもしろい',l:5},{w:'すばらしい',l:5},{w:'ふじさん',l:5},{w:'きゅうきゅうしゃ',l:5},
+  {w:'ありがとうございます',l:6},{w:'おはようございます',l:6},{w:'よろしくおねがいします',l:6},{w:'たんじょうびおめでとう',l:6},{w:'ちょっとまってください',l:6},
 ];
 
-// =====================
-// ローマ字テーブル
-// =====================
-const romaMap = {
-  "あ":["a"],"い":["i"],"う":["u"],"え":["e"],"お":["o"],
-  "か":["ka"],"き":["ki"],"く":["ku"],"け":["ke"],"こ":["ko"],
-  "さ":["sa"],"し":["shi","si"],"す":["su"],"せ":["se"],"そ":["so"],
-  "た":["ta"],"ち":["chi","ti"],"つ":["tsu","tu"],"て":["te"],"と":["to"],
-  "な":["na"],"に":["ni"],"ぬ":["nu"],"ね":["ne"],"の":["no"],
-  "は":["ha"],"ひ":["hi"],"ふ":["fu","hu"],"へ":["he"],"ほ":["ho"],
-  "ま":["ma"],"み":["mi"],"む":["mu"],"め":["me"],"も":["mo"],
-  "や":["ya"],"ゆ":["yu"],"よ":["yo"],
-  "ら":["ra"],"り":["ri"],"る":["ru"],"れ":["re"],"ろ":["ro"],
-  "わ":["wa"],"を":["wo"],"ん":["n"]
-};
+let G={};
 
-const digraph = {
-  "きゃ":["kya"],"きゅ":["kyu"],"きょ":["kyo"],
-  "しゃ":["sha","sya"],"しゅ":["shu","syu"],"しょ":["sho","syo"],
-  "ちゃ":["cha","tya"],"ちゅ":["chu","tyu"],"ちょ":["cho","tyo"]
-};
+function initState(){G={running:false,paused:false,score:0,combo:0,miss:0,correct:0,totalKeys:0,level:1,xp:0,timer:GAME_TIME,pool:[],wordIdx:0,words:[],current:null,interval:null};}
+function wordsForLevel(lv){const mn=Math.max(1,lv-1),mx=Math.min(6,lv+1);return ALL_WORDS.filter(w=>w.l>=mn&&w.l<=mx);}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
+function buildPool(){G.pool=shuffle(wordsForLevel(G.level));G.wordIdx=0;}
+function nextWord(){if(G.wordIdx>=G.pool.length)buildPool();const w=G.pool[G.wordIdx++];return{...w,variants:kanaToRomajiVariants(w.w)};}
 
-// =====================
-// 変換
-// =====================
-function kanaToRomaPatterns(kana) {
-  let results = [""];
-
-  for (let i = 0; i < kana.length; i++) {
-    let char = kana[i];
-
-    if (char === "っ") {
-      let next = kana[i+1];
-      let nextRoma = getRoma(next);
-      let temp = [];
-      results.forEach(r => {
-        nextRoma.forEach(nr => temp.push(r + nr[0]));
-        temp.push(r + "xtu");
-      });
-      results = temp;
-      continue;
-    }
-
-    let pair = kana[i] + kana[i+1];
-    if (digraph[pair]) {
-      results = combine(results, digraph[pair]);
-      i++;
-      continue;
-    }
-
-    results = combine(results, getRoma(char));
-  }
-
-  results = expandN(results);
-  return [...new Set(results)];
+function startGame(){
+  document.getElementById('start-scr').style.display='none';
+  document.getElementById('result-scr').style.display='none';
+  document.getElementById('pause-scr').style.display='none';
+  initState();
+  G.running=true;
+  buildPool();
+  G.words=[nextWord(),nextWord(),nextWord(),nextWord(),nextWord()];
+  G.current=G.words[0];
+  renderAll();
+  const inp=document.getElementById('inp');
+  inp.value='';inp.focus();
+  clearInterval(G.interval);
+  G.interval=setInterval(tick,100);
 }
 
-function getRoma(char) {
-  return romaMap[char] || [char];
+function goTitle(){
+  clearInterval(G.interval);
+  G.running=false;G.paused=false;
+  document.getElementById('pause-scr').style.display='none';
+  document.getElementById('result-scr').style.display='none';
+  document.getElementById('start-scr').style.display='flex';
+  document.getElementById('tf').style.width='100%';
+  document.getElementById('tf').className='timer-fill';
+  document.getElementById('kana').textContent='—';
+  document.getElementById('rom').innerHTML='';
+  document.getElementById('acc-row').innerHTML='';
+  document.getElementById('upcoming').innerHTML='';
+  document.getElementById('inp').value='';
 }
 
-function combine(a, b) {
-  let res = [];
-  a.forEach(x => b.forEach(y => res.push(x + y)));
-  return res;
+function pauseGame(){
+  if(!G.running||G.paused)return;
+  G.paused=true;
+  clearInterval(G.interval);
+  document.getElementById('inp').blur();
+  document.getElementById('pause-scr').style.display='flex';
 }
 
-function expandN(list) {
-  let res = [];
-  list.forEach(str => {
-    res.push(str);
-    res.push(str.replace(/n/g, "nn"));
-    res.push(str.replace(/n(?=[aiueoy])/g, "n'"));
+function resumeGame(){
+  if(!G.paused)return;
+  G.paused=false;
+  document.getElementById('pause-scr').style.display='none';
+  document.getElementById('inp').focus();
+  G.interval=setInterval(tick,100);
+}
+
+function tick(){
+  G.timer-=0.1;
+  if(G.timer<=0){G.timer=0;endGame();return;}
+  const pct=(G.timer/GAME_TIME)*100;
+  const tf=document.getElementById('tf');
+  tf.style.width=Math.round(pct)+'%';
+  tf.className='timer-fill'+(pct<20?' danger':pct<40?' warn':'');
+}
+
+function renderAll(){
+  document.getElementById('sc').textContent=G.score;
+  document.getElementById('cb').textContent=G.combo;
+  document.getElementById('ms').textContent=G.miss;
+  const xpN=XP_TABLE[Math.min(G.level,XP_TABLE.length-1)]||25;
+  document.getElementById('lv-num').textContent=G.level;
+  document.getElementById('lv-bar').style.width=Math.min(100,Math.round((G.xp/xpN)*100))+'%';
+  document.getElementById('lv-xp').textContent=G.xp+'/'+xpN;
+  document.getElementById('kana').textContent=G.current.w;
+  document.getElementById('hint-lv').textContent='単語 Lv.'+G.current.l;
+  renderAccepted('');renderRomaji('');renderUpcoming();
+}
+
+function renderAccepted(typed){
+  const el=document.getElementById('acc-row');el.innerHTML='';
+  G.current.variants.slice(0,6).forEach(v=>{
+    const d=document.createElement('div');
+    d.className='acc-chip'+(v.startsWith(typed)&&typed.length>0?' match':'');
+    d.textContent=v;el.appendChild(d);
   });
-  return res;
 }
 
-// =====================
-// ゲーム
-// =====================
-let current = {};
-let score = 0;
-let time = 30;
-let level = 1;
-let combo = 0;
-let highScore = localStorage.getItem("highScore") || 0;
-let timer;
-
-const jpWord = document.getElementById("jpWord");
-const romaWord = document.getElementById("romaWord");
-const input = document.getElementById("input");
-
-const scoreDisplay = document.getElementById("score");
-const highScoreDisplay = document.getElementById("highScore");
-const timeDisplay = document.getElementById("time");
-const levelDisplay = document.getElementById("level");
-const comboDisplay = document.getElementById("combo");
-
-highScoreDisplay.textContent = highScore;
-
-function startGame() {
-  score = 0;
-  time = 30;
-  level = 1;
-  combo = 0;
-
-  input.disabled = false;
-  input.value = "";
-  input.focus();
-
-  nextWord();
-
-  clearInterval(timer);
-  timer = setInterval(updateTime, 1000);
-
-  updateUI();
+function renderRomaji(typed){
+  const best=G.current.variants.find(v=>v.startsWith(typed))||G.current.variants[0];
+  const n=typed.length;
+  document.getElementById('rom').innerHTML='<span class="rt">'+best.slice(0,n)+'</span><span class="rc">'+(best[n]||'')+'</span><span class="rr">'+best.slice(n+1)+'</span>';
 }
 
-function nextWord() {
-  const kana = words[Math.floor(Math.random() * words.length)];
-  const patterns = kanaToRomaPatterns(kana);
-
-  current = { kana, patterns };
-
-  jpWord.textContent = kana;
-  romaWord.textContent = patterns.slice(0,5).join(" / ");
+function renderUpcoming(){
+  const el=document.getElementById('upcoming');el.innerHTML='';
+  G.words.forEach((w,i)=>{
+    const d=document.createElement('div');
+    d.className='chip'+(i===0?' cur':'');
+    d.textContent=w.variants[0];el.appendChild(d);
+  });
 }
 
-input.addEventListener("input", () => {
-  const val = input.value;
+function gainXP(amount){
+  G.xp+=amount;
+  const needed=XP_TABLE[Math.min(G.level,XP_TABLE.length-1)]||25;
+  if(G.xp>=needed&&G.level<10){G.xp-=needed;G.level++;buildPool();document.getElementById('kana').style.color='#b899ff';setTimeout(()=>{document.getElementById('kana').style.color='#fff';},400);}
+}
 
-  const match = current.patterns.some(p => p.startsWith(val));
+function spawnPts(pts){
+  const app=document.getElementById('app');
+  const p=document.createElement('div');
+  p.className='pts-pop';p.textContent='+'+pts;
+  p.style.left=(160+Math.random()*220)+'px';p.style.top='190px';
+  app.appendChild(p);setTimeout(()=>p.remove(),750);
+}
 
-  if (match) {
-    const complete = current.patterns.some(p => p === val);
+const inp=document.getElementById('inp');
 
-    if (complete) {
-      combo++;
-      score += 10 + combo * 2;
-
-      if (score > level * 100) {
-        level++;
-        time += 5;
-      }
-
-      updateUI();
-      input.value = "";
-      nextWord();
-    }
-  } else {
-    combo = 0;
-    input.value = "";
-    updateUI();
+inp.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    e.preventDefault();
+    if(G.running&&!G.paused) pauseGame();
+    else if(G.paused) resumeGame();
   }
 });
 
-function updateTime() {
-  time--;
-  timeDisplay.textContent = time;
-
-  if (time <= 0) {
-    clearInterval(timer);
-    endGame();
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(G.running&&!G.paused) pauseGame();
+    else if(G.paused) resumeGame();
   }
-}
+  if(e.key==='Enter'&&G.paused) resumeGame();
+});
 
-function updateUI() {
-  scoreDisplay.textContent = score;
-  comboDisplay.textContent = combo;
-  levelDisplay.textContent = level;
-}
-
-function endGame() {
-  jpWord.textContent = "ゲーム終了！";
-  romaWord.textContent = "";
-  input.disabled = true;
-
-  if (score > highScore) {
-    localStorage.setItem("highScore", score);
-    highScoreDisplay.textContent = score;
+inp.addEventListener('input',function(){
+  if(!G.running||G.paused)return;
+  const val=this.value.toLowerCase();
+  G.totalKeys++;
+  const variants=G.current.variants;
+  const partial=variants.some(v=>v.startsWith(val));
+  const exact=variants.some(v=>v===val);
+  if(partial){
+    this.classList.remove('err');
+    renderRomaji(val);renderAccepted(val);
+    if(exact){
+      G.combo++;G.correct++;gainXP(G.current.l);
+      const pts=(G.current.l*10)+(Math.floor(G.combo/3)*5);
+      G.score+=pts;G.timer=Math.min(GAME_TIME,G.timer+1.5);
+      spawnPts(pts);
+      const kEl=document.getElementById('kana');
+      kEl.classList.remove('shake','ok');void kEl.offsetWidth;kEl.classList.add('ok');
+      G.words.shift();G.words.push(nextWord());G.current=G.words[0];
+      this.value='';renderAll();
+    }
+  } else {
+    this.classList.add('err');
+    G.miss++;G.combo=0;
+    document.getElementById('cb').textContent=0;
+    document.getElementById('ms').textContent=G.miss;
+    const kEl=document.getElementById('kana');
+    kEl.classList.remove('shake','ok');void kEl.offsetWidth;kEl.classList.add('shake');
+    setTimeout(()=>this.classList.remove('err'),380);
+    this.value='';renderRomaji('');renderAccepted('');
   }
+});
+
+function endGame(){
+  clearInterval(G.interval);G.running=false;inp.blur();
+  document.getElementById('fin-sc').textContent=G.score;
+  document.getElementById('fin-lv').textContent='Lv.'+G.level+' 到達';
+  document.getElementById('r-cor').textContent=G.correct;
+  document.getElementById('r-mis').textContent=G.miss;
+  const tot=G.correct+G.miss;
+  document.getElementById('r-acc').textContent=(tot>0?Math.round((G.correct/tot)*100):0)+'%';
+  const ranks=[[200,'👑 神レベル'],[120,'⭐ すごい！'],[70,'👍 よくできました'],[30,'💪 もっとがんばれ'],[0,'🌱 練習あるのみ']];
+  let rank=ranks[ranks.length-1][1];
+  for(const [t,l] of ranks){if(G.score>=t){rank=l;break;}}
+  document.getElementById('rank-txt').textContent=rank;
+  document.getElementById('result-scr').style.display='flex';
 }
 </script>
-
-</body>
-</html>
