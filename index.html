@@ -1,467 +1,1308 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ローマ字タイピング</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>レジ POS システム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=Share+Tech+Mono&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#08080e;min-height:100vh}
-#app{min-height:560px;background:#08080e;color:#e8e8f0;font-family:'Zen Kaku Gothic New',sans-serif;padding:1.6rem 2rem;position:relative;overflow:hidden;max-width:720px;margin:0 auto}
-.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(180,140,255,0.04)1px,transparent 1px),linear-gradient(90deg,rgba(180,140,255,0.04)1px,transparent 1px);background-size:40px 40px;pointer-events:none}
-.rel{position:relative;z-index:1}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
-.logo{font-size:17px;font-weight:900;letter-spacing:.18em;color:#b899ff}
-.header-right{display:flex;align-items:center;gap:10px}
-.esc-hint{font-size:11px;color:rgba(184,153,255,.35);letter-spacing:.06em;border:.5px solid rgba(184,153,255,.2);border-radius:4px;padding:2px 7px;font-family:'Share Tech Mono',monospace}
-.stats{display:flex;gap:8px}
-.s{background:rgba(255,255,255,.04);border:.5px solid rgba(184,153,255,.18);border-radius:8px;padding:4px 12px;text-align:center;min-width:68px}
-.s-l{font-size:10px;color:rgba(184,153,255,.5);letter-spacing:.1em;text-transform:uppercase}
-.s-v{font-family:'Share Tech Mono',monospace;font-size:21px;color:#b899ff}
-.lv-strip{display:flex;align-items:center;gap:10px;margin-bottom:.8rem}
-.lv-label{font-size:12px;color:rgba(184,153,255,.5);letter-spacing:.08em;white-space:nowrap}
-.lv-bar-bg{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
-.lv-bar{height:100%;background:#b899ff;border-radius:3px;transition:width .4s ease}
-.lv-num{font-family:'Share Tech Mono',monospace;font-size:12px;color:#b899ff;min-width:28px;text-align:right}
-.timer-wrap{width:100%;height:4px;background:rgba(255,255,255,.07);border-radius:2px;margin-bottom:1.3rem;overflow:hidden}
-.timer-fill{height:100%;background:#b899ff;border-radius:2px;transition:width .1s linear,background .3s}
-.timer-fill.warn{background:#ff9040}
-.timer-fill.danger{background:#ff5050}
-.word-area{text-align:center;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-bottom:1rem}
-.kana{font-size:44px;font-weight:900;letter-spacing:.1em;color:#fff}
-.kana.shake{animation:sk .18s ease}
-.kana.ok{animation:ok .22s ease}
-@keyframes sk{0%,100%{transform:translateX(0)}30%{transform:translateX(-7px)}70%{transform:translateX(7px)}}
-@keyframes ok{0%{transform:scale(1)}50%{transform:scale(1.07)}100%{transform:scale(1)}}
-.hint-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
-.hint-badge{font-size:11px;padding:2px 10px;border-radius:20px;border:.5px solid rgba(184,153,255,.3);color:rgba(184,153,255,.6);letter-spacing:.06em}
-.accepted-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:24px}
-.acc-chip{font-family:'Share Tech Mono',monospace;font-size:12px;padding:2px 9px;border-radius:4px;border:.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.35);background:rgba(255,255,255,.03)}
-.acc-chip.match{border-color:rgba(125,250,150,.4);color:#7dfa96;background:rgba(125,250,150,.07)}
-.romaji-line{font-family:'Share Tech Mono',monospace;font-size:24px;letter-spacing:.18em;min-height:32px}
-.rt{color:#7dfa96}.rc{color:#b899ff;animation:bl .7s step-end infinite}.rr{color:rgba(255,255,255,.25)}
-@keyframes bl{50%{opacity:0}}
-.type-input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(184,153,255,.22);border-radius:10px;padding:.75rem 1.2rem;font-family:'Share Tech Mono',monospace;font-size:18px;color:#fff;outline:none;letter-spacing:.1em;caret-color:#b899ff;transition:border-color .2s,box-shadow .2s;margin-bottom:1rem}
-.type-input:focus{border-color:rgba(184,153,255,.55);box-shadow:0 0 0 3px rgba(184,153,255,.07)}
-.type-input.err{border-color:rgba(255,80,80,.5);box-shadow:0 0 0 3px rgba(255,80,80,.07)}
-.upcoming{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;min-height:24px}
-.chip{font-size:11px;padding:2px 9px;border-radius:20px;border:.5px solid rgba(255,255,255,.09);color:rgba(255,255,255,.28);font-family:'Share Tech Mono',monospace}
-.chip.cur{border-color:rgba(184,153,255,.5);background:rgba(184,153,255,.12);color:#b899ff}
-.overlay{position:absolute;inset:0;background:#08080e;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.1rem}
-.big-num{font-family:'Share Tech Mono',monospace;font-size:58px;color:#fff;line-height:1}
-.sub-label{font-size:11px;color:rgba(184,153,255,.5);letter-spacing:.15em;text-transform:uppercase}
-.res-row{display:flex;gap:8px}
-.start-btn{background:rgba(184,153,255,.13);border:1px solid rgba(184,153,255,.45);border-radius:10px;color:#b899ff;font-family:'Zen Kaku Gothic New',sans-serif;font-size:14px;font-weight:700;letter-spacing:.15em;padding:.6rem 2rem;cursor:pointer;transition:all .2s}
-.start-btn:hover{background:rgba(184,153,255,.22)}
-.lv-badge{font-size:12px;font-weight:700;letter-spacing:.12em;padding:3px 14px;border-radius:20px;border:.5px solid rgba(184,153,255,.4);background:rgba(184,153,255,.1);color:#b899ff}
-.pts-pop{position:absolute;font-family:'Share Tech Mono',monospace;font-size:14px;color:#7dfa96;font-weight:700;pointer-events:none;z-index:15;animation:pf .7s ease-out forwards}
-@keyframes pf{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-45px)}}
-.input-info{font-size:11px;color:rgba(184,153,255,.4);text-align:center;margin-top:-.6rem;margin-bottom:.8rem;letter-spacing:.06em}
-.confirm-overlay{position:absolute;inset:0;background:rgba(8,8,14,.88);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem}
-.confirm-box{background:#0f0f1a;border:.5px solid rgba(184,153,255,.3);border-radius:14px;padding:2rem 2.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center}
-.confirm-box p{font-size:13px;color:rgba(184,153,255,.65);letter-spacing:.06em;line-height:1.8}
-.confirm-btns{display:flex;gap:10px}
-.btn-yes{background:rgba(255,80,80,.12);border:1px solid rgba(255,80,80,.4);border-radius:8px;color:#ff8080;font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;padding:.5rem 1.5rem;cursor:pointer;transition:all .2s}
-.btn-yes:hover{background:rgba(255,80,80,.22)}
-.btn-no{background:rgba(184,153,255,.1);border:1px solid rgba(184,153,255,.35);border-radius:8px;color:#b899ff;font-family:'Zen Kaku Gothic New',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;padding:.5rem 1.5rem;cursor:pointer;transition:all .2s}
-.btn-no:hover{background:rgba(184,153,255,.2)}
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --danger: #ff4757;
+    --warn: #ffa502;
+    --text: #e8f4fd;
+    --text2: #8ba4c0;
+    --border: rgba(0,212,255,0.2);
+    --glow: 0 0 20px rgba(0,212,255,0.3);
+    --glow2: 0 0 20px rgba(0,255,157,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Header */
+  .header {
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(135deg, #0d1b2e, #111827);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .header-logo {
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: clamp(14px, 1.6vw, 22px);
+    letter-spacing: clamp(2px, 0.4vw, 4px);
+    color: var(--accent);
+    text-shadow: var(--glow);
+  }
+
+  .header-logo span { color: var(--accent2); }
+
+  .header-info {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: clamp(10px, 1.1vw, 13px);
+    color: var(--text2);
+  }
+
+  .clock {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  /* Main layout */
+  .main {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr clamp(280px, 28vw, 420px);
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
+    height: calc(100dvh - 58px);
+  }
+
+  /* Left panel */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+  }
+
+  /* Product list */
+  .cart-section {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    box-shadow: var(--glow);
+  }
+
+  .section-header {
+    padding: 10px 16px;
+    background: linear-gradient(90deg, rgba(0,212,255,0.1), transparent);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-header::before {
+    content: '';
+    width: 4px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: var(--glow);
+  }
+
+  .cart-table-wrap { flex: 1; overflow-y: auto; }
+
+  .cart-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .cart-table th {
+    position: sticky;
+    top: 0;
+    background: var(--surface2);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    z-index: 2;
+  }
+
+  .cart-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+
+  .cart-table tr:hover td { background: rgba(0,212,255,0.04); }
+
+  .item-name {
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .item-code {
+    font-size: 10px;
+    color: var(--text2);
+    font-family: monospace;
+  }
+
+  .qty-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .qty-btn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .qty-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  .qty-num {
+    width: 32px;
+    text-align: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .price-cell {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    color: var(--accent2);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .del-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(255,71,87,0.3);
+    background: transparent;
+    color: var(--danger);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .del-btn:hover {
+    background: var(--danger);
+    color: white;
+    box-shadow: 0 0 12px rgba(255,71,87,0.4);
+  }
+
+  .empty-cart {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    font-size: 13px;
+    gap: 10px;
+    padding: 40px;
+  }
+
+  .empty-cart .icon { font-size: 48px; opacity: 0.3; }
+
+  /* Barcode input area */
+  .scan-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .scan-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .scan-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: var(--accent);
+  }
+
+  .scan-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    padding: 10px 12px 10px 40px;
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 2px;
+  }
+
+  .scan-input:focus {
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .scan-input::placeholder {
+    color: var(--text2);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .cam-btn {
+    padding: 10px 16px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.05));
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cam-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  .cam-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    box-shadow: var(--glow);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: var(--glow); }
+    50% { box-shadow: 0 0 30px rgba(0,212,255,0.6); }
+  }
+
+  /* Right panel */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--glow);
+  }
+
+  .summary-rows { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .summary-row .val {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .summary-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .total-row {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(0,255,157,0.1), rgba(0,212,255,0.05));
+    border-top: 1px solid rgba(0,255,157,0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+  }
+
+  .total-amount {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(18px, 2.2vw, 30px);
+    color: var(--accent2);
+    text-shadow: var(--glow2);
+  }
+
+  /* Payment section */
+  .payment-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .payment-input-wrap {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .payment-label {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 1px;
+  }
+
+  .payment-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--accent2);
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(16px, 1.8vw, 24px);
+    padding: clamp(6px, 0.8vh, 12px) 14px;
+    outline: none;
+    text-align: right;
+    transition: border-color 0.2s;
+  }
+
+  .payment-input:focus {
+    border-color: var(--accent2);
+    box-shadow: var(--glow2);
+  }
+
+  .change-display {
+    padding: 10px 16px;
+    background: rgba(0,255,157,0.05);
+    border-top: 1px solid rgba(0,255,157,0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .change-label { font-size: 12px; color: var(--text2); }
+
+  .change-val {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(14px, 1.6vw, 22px);
+    color: var(--accent2);
+  }
+
+  .change-val.negative { color: var(--danger); }
+
+  /* Numpad */
+  .numpad {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .num-btn {
+    padding: clamp(6px, 1.2vh, 14px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: clamp(13px, 1.4vw, 20px);
+    font-family: 'Orbitron', monospace;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .num-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .num-btn:active { transform: scale(0.95); }
+
+  .num-btn.wide { grid-column: span 2; }
+
+  .num-btn.clear {
+    border-color: rgba(255,71,87,0.3);
+    color: var(--danger);
+  }
+
+  .num-btn.clear:hover {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+    box-shadow: 0 0 12px rgba(255,71,87,0.4);
+  }
+
+  /* Checkout button */
+  .checkout-btn {
+    width: 100%;
+    padding: clamp(10px, 1.5vh, 20px);
+    background: linear-gradient(135deg, #00d4ff, #00ff9d);
+    border: none;
+    border-radius: 12px;
+    color: var(--bg);
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(12px, 1.3vw, 18px);
+    font-weight: 900;
+    letter-spacing: clamp(1px, 0.3vw, 3px);
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,212,255,0.4);
+  }
+
+  .checkout-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,212,255,0.6);
+  }
+
+  .checkout-btn:active { transform: translateY(0); }
+
+  .checkout-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .clear-all-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px solid rgba(255,71,87,0.3);
+    border-radius: 8px;
+    color: var(--danger);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .clear-all-btn:hover {
+    background: rgba(255,71,87,0.1);
+    border-color: var(--danger);
+  }
+
+  /* Camera modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+
+  .modal-overlay.active { display: flex; }
+
+  .camera-modal {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 20px;
+    width: 460px;
+    box-shadow: var(--glow), 0 20px 60px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+
+  .modal-close:hover { color: var(--danger); }
+
+  #camera-container {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+  }
+
+  #camera-container video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+  }
+
+  .scan-line {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    top: 30%;
+    animation: scanline 2s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  @keyframes scanline {
+    0%, 100% { top: 20%; opacity: 1; }
+    50% { top: 80%; opacity: 0.7; }
+  }
+
+  .scan-frame {
+    position: absolute;
+    inset: 20%;
+    border: 2px solid rgba(0,212,255,0.6);
+    border-radius: 4px;
+  }
+
+  .scan-frame::before, .scan-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: var(--accent);
+    border-style: solid;
+  }
+
+  .scan-frame::before {
+    top: -2px;
+    left: -2px;
+    border-width: 3px 0 0 3px;
+  }
+
+  .scan-frame::after {
+    bottom: -2px;
+    right: -2px;
+    border-width: 0 3px 3px 0;
+  }
+
+  .scan-status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text2);
+    padding: 6px;
+    background: var(--surface2);
+    border-radius: 8px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .scan-status.detected {
+    color: var(--accent2);
+    background: rgba(0,255,157,0.1);
+    border: 1px solid rgba(0,255,157,0.3);
+  }
+
+  /* OK modal */
+  .ok-modal {
+    background: var(--surface);
+    border: 2px solid var(--accent2);
+    border-radius: 20px;
+    padding: 40px;
+    width: 360px;
+    text-align: center;
+    box-shadow: var(--glow2), 0 20px 60px rgba(0,0,0,0.8);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .ok-icon {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin: 0 auto 20px;
+    box-shadow: var(--glow2);
+    animation: spin-in 0.5s ease;
+  }
+
+  @keyframes spin-in {
+    from { transform: rotate(-180deg) scale(0); }
+    to { transform: rotate(0) scale(1); }
+  }
+
+  .ok-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent2);
+    letter-spacing: 4px;
+    text-shadow: var(--glow2);
+    margin-bottom: 8px;
+  }
+
+  .ok-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+  .ok-detail {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ok-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+
+  .ok-row .ok-label { color: var(--text2); }
+
+  .ok-row .ok-val {
+    font-family: 'Orbitron', monospace;
+    color: var(--text);
+  }
+
+  .ok-row.highlight .ok-val { color: var(--accent2); font-size: 16px; }
+
+  .ok-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #00d4ff, #00ff9d);
+    border: none;
+    border-radius: 10px;
+    color: var(--bg);
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ok-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow2);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 200;
+    animation: slideIn 0.3s ease;
+    box-shadow: var(--glow);
+    max-width: 280px;
+  }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .toast.error { border-color: var(--danger); box-shadow: 0 0 15px rgba(255,71,87,0.3); }
+  .toast.success { border-color: var(--accent2); box-shadow: var(--glow2); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .main {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      height: auto;
+      overflow-y: auto;
+    }
+    body { overflow-y: auto; height: auto; }
+    .left-panel { min-height: 50vh; }
+    .right-panel { flex-direction: row; flex-wrap: wrap; }
+    .summary-card, .payment-card { flex: 1 1 200px; }
+    .numpad { flex: 0 0 100%; }
+    .checkout-btn, .clear-all-btn { flex: 1 1 45%; }
+  }
+
+  @media (max-width: 600px) {
+    .header { padding: 8px 12px; }
+    .header-info span:not(.clock) { display: none; }
+    .main { padding: 8px; gap: 8px; }
+    .right-panel { flex-direction: column; }
+  }
+
 </style>
 </head>
 <body>
-<div id="app">
-<div class="grid-bg"></div>
-<div class="rel">
-  <div class="header">
-    <div class="logo">ローマ字タイピング</div>
-    <div class="header-right">
-      <span class="esc-hint" id="esc-hint" style="display:none">ESC で中断</span>
-      <div class="stats">
-        <div class="s"><div class="s-l">スコア</div><div class="s-v" id="sc">0</div></div>
-        <div class="s"><div class="s-l">コンボ</div><div class="s-v" id="cb">0</div></div>
-        <div class="s"><div class="s-l">ミス</div><div class="s-v" id="ms">0</div></div>
+
+<div class="header">
+  <div class="header-logo">POS<span>NEXUS</span></div>
+  <div class="header-info">
+    <span>レジ #001</span>
+    <span>担当: オペレーター</span>
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Left Panel -->
+  <div class="left-panel">
+    <div class="cart-section">
+      <div class="section-header">カート / CART</div>
+      <div class="cart-table-wrap" id="cart-wrap">
+        <div class="empty-cart" id="empty-msg">
+          <div class="icon">🛒</div>
+          <div>商品をスキャンしてください</div>
+        </div>
+        <table class="cart-table" id="cart-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>商品名</th>
+              <th>数量</th>
+              <th>単価</th>
+              <th>小計</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="cart-body"></tbody>
+        </table>
       </div>
     </div>
-  </div>
-  <div class="lv-strip">
-    <div class="lv-label">Lv.<span id="lv-num">1</span></div>
-    <div class="lv-bar-bg"><div class="lv-bar" id="lv-bar" style="width:0%"></div></div>
-    <div class="lv-num" id="lv-xp">0/5</div>
-  </div>
-  <div class="timer-wrap"><div class="timer-fill" id="tf" style="width:100%"></div></div>
-  <div class="word-area">
-    <div class="kana" id="kana">—</div>
-    <div class="hint-row"><div class="hint-badge" id="hint-lv">単語 Lv.1</div></div>
-    <div class="accepted-row" id="acc-row"></div>
-    <div class="romaji-line" id="rom"></div>
-  </div>
-  <input type="text" class="type-input" id="inp" placeholder="どの入力方式でもOK！" autocomplete="off" autocorrect="off" spellcheck="false">
-  <div class="input-info">ヘボン式・訓令式・IME式、どれでも正解になります</div>
-  <div class="upcoming" id="upcoming"></div>
-</div>
 
-<div class="overlay" id="start-scr">
-  <div class="logo" style="font-size:22px">ローマ字タイピング</div>
-  <p style="font-size:13px;color:rgba(184,153,255,.5);letter-spacing:.06em;text-align:center;line-height:1.9">ヘボン式・訓令式・IME式<br>どの入力方式でも正解になります！<br>レベルアップするほど難しい単語が登場します。<br><span style="color:rgba(184,153,255,.3)">ゲーム中は ESC でタイトルに戻れます</span></p>
-  <button class="start-btn" onclick="startGame()">スタート ▶</button>
-  <div style="font-size:11px;color:rgba(184,153,255,.3);letter-spacing:.1em">Space キーでも開始できます</div>
-</div>
-
-<div class="overlay" id="result-scr" style="display:none">
-  <div class="sub-label">最終スコア</div>
-  <div class="big-num" id="fin-sc">0</div>
-  <div class="lv-badge" id="fin-lv">Lv.1 到達</div>
-  <div class="res-row">
-    <div class="s"><div class="s-l">正解</div><div class="s-v" id="r-cor">0</div></div>
-    <div class="s"><div class="s-l">ミス</div><div class="s-v" id="r-mis">0</div></div>
-    <div class="s"><div class="s-l">精度</div><div class="s-v" id="r-acc">-%</div></div>
-  </div>
-  <div id="rank-txt" style="font-size:15px;letter-spacing:.1em;color:#b899ff"></div>
-  <button class="start-btn" onclick="startGame()">もう一度</button>
-  <div style="font-size:11px;color:rgba(184,153,255,.3);letter-spacing:.1em">Space キーでも再スタートできます</div>
-</div>
-
-<div class="confirm-overlay" id="confirm-scr" style="display:none">
-  <div class="confirm-box">
-    <div style="font-size:16px;font-weight:700;color:#b899ff;letter-spacing:.1em">ゲームを中断しますか？</div>
-    <p>タイトルに戻ると<br>現在のスコアは失われます。</p>
-    <div class="confirm-btns">
-      <button class="btn-yes" onclick="confirmQuit()">やめる</button>
-      <button class="btn-no" onclick="cancelQuit()">続ける（ESC）</button>
+    <div class="scan-area">
+      <div class="scan-input-wrap">
+        <span class="scan-icon">⚡</span>
+        <input class="scan-input" id="barcode-input" type="text"
+          placeholder="バーコードをスキャン / 入力して Enter"
+          autofocus autocomplete="off">
+      </div>
+      <button class="cam-btn" id="cam-btn" onclick="toggleCamera()">
+        📷 カメラ
+      </button>
     </div>
   </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <div class="summary-card">
+      <div class="section-header">会計 / PAYMENT</div>
+      <div class="summary-rows">
+        <div class="summary-row">
+          <span>小計</span>
+          <span class="val" id="subtotal">¥0</span>
+        </div>
+        <div class="summary-row">
+          <span>消費税 (10%)</span>
+          <span class="val" id="tax">¥0</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-row">
+          <span>点数</span>
+          <span class="val" id="item-count">0点</span>
+        </div>
+      </div>
+      <div class="total-row">
+        <span class="total-label">合計</span>
+        <span class="total-amount" id="total">¥0</span>
+      </div>
+    </div>
+
+    <div class="payment-card">
+      <div class="payment-input-wrap">
+        <span class="payment-label">お預かり金額</span>
+        <input class="payment-input" id="payment-input" type="text"
+          placeholder="0" readonly>
+      </div>
+      <div class="change-display">
+        <span class="change-label">お釣り</span>
+        <span class="change-val" id="change">¥0</span>
+      </div>
+    </div>
+
+    <div class="numpad" id="numpad">
+      <button class="num-btn" onclick="numpad('7')">7</button>
+      <button class="num-btn" onclick="numpad('8')">8</button>
+      <button class="num-btn" onclick="numpad('9')">9</button>
+      <button class="num-btn" onclick="numpad('4')">4</button>
+      <button class="num-btn" onclick="numpad('5')">5</button>
+      <button class="num-btn" onclick="numpad('6')">6</button>
+      <button class="num-btn" onclick="numpad('1')">1</button>
+      <button class="num-btn" onclick="numpad('2')">2</button>
+      <button class="num-btn" onclick="numpad('3')">3</button>
+      <button class="num-btn clear" onclick="numpad('C')">C</button>
+      <button class="num-btn wide" onclick="numpad('0')">0</button>
+    </div>
+
+    <button class="checkout-btn" id="checkout-btn" onclick="checkout()" disabled>
+      会計 ▶ CHECKOUT
+    </button>
+    <button class="clear-all-btn" onclick="clearAll()">🗑️ リセット</button>
+  </div>
 </div>
+
+<!-- Camera Modal -->
+<div class="modal-overlay" id="camera-modal">
+  <div class="camera-modal">
+    <div class="modal-title">
+      <span>📷 バーコードスキャン</span>
+      <button class="modal-close" onclick="closeCamera()">✕</button>
+    </div>
+    <div id="camera-container">
+      <div class="scan-line"></div>
+      <div class="scan-frame"></div>
+    </div>
+    <div class="scan-status" id="scan-status">カメラを起動中...</div>
+  </div>
+</div>
+
+<!-- OK Modal -->
+<div class="modal-overlay" id="ok-modal">
+  <div class="ok-modal">
+    <div class="ok-icon">✓</div>
+    <div class="ok-title">OK!</div>
+    <div class="ok-subtitle">会計が完了しました</div>
+    <div class="ok-detail">
+      <div class="ok-row highlight">
+        <span class="ok-label">合計金額</span>
+        <span class="ok-val" id="ok-total"></span>
+      </div>
+      <div class="ok-row">
+        <span class="ok-label">お預かり</span>
+        <span class="ok-val" id="ok-payment"></span>
+      </div>
+      <div class="ok-row highlight">
+        <span class="ok-label">お釣り</span>
+        <span class="ok-val" id="ok-change"></span>
+      </div>
+    </div>
+    <button class="ok-btn" onclick="nextCustomer()">次のお客様 ▶</button>
+  </div>
 </div>
 
 <script>
-const KANA_MAP={
-  'あ':['a'],'い':['i'],'う':['u','wu'],'え':['e'],'お':['o'],
-  'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],
-  'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],
-  'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],
-  'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
-  'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],
-  'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
-  'や':['ya'],'ゆ':['yu'],'よ':['yo'],
-  'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
-  'わ':['wa'],'を':['wo','o'],'ん':['nn','n','xn'],
-  'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
-  'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
-  'だ':['da'],'ぢ':['di','ji'],'づ':['du','zu'],'で':['de'],'ど':['do'],
-  'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
-  'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
-  'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],
-  'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しょ':['sho','syo'],
-  'ちゃ':['cha','tya','cya'],'ちゅ':['chu','tyu','cyu'],'ちょ':['cho','tyo','cyo'],
-  'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],
-  'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],
-  'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],
-  'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],
-  'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],
-  'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],
-  'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],
-  'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],
-  'ふぁ':['fa'],'ふぃ':['fi'],'ふぇ':['fe'],'ふぉ':['fo'],
-  'っ':['ltu','xtu','ltsu'],
-  'ア':['a'],'イ':['i'],'ウ':['u'],'エ':['e'],'オ':['o'],
-  'カ':['ka'],'キ':['ki'],'ク':['ku'],'ケ':['ke'],'コ':['ko'],
-  'サ':['sa'],'シ':['si','shi'],'ス':['su'],'セ':['se'],'ソ':['so'],
-  'タ':['ta'],'チ':['ti','chi'],'ツ':['tu','tsu'],'テ':['te'],'ト':['to'],
-  'ナ':['na'],'ニ':['ni'],'ヌ':['nu'],'ネ':['ne'],'ノ':['no'],
-  'ハ':['ha'],'ヒ':['hi'],'フ':['fu','hu'],'ヘ':['he'],'ホ':['ho'],
-  'マ':['ma'],'ミ':['mi'],'ム':['mu'],'メ':['me'],'モ':['mo'],
-  'ヤ':['ya'],'ユ':['yu'],'ヨ':['yo'],
-  'ラ':['ra'],'リ':['ri'],'ル':['ru'],'レ':['re'],'ロ':['ro'],
-  'ワ':['wa'],'ヲ':['wo'],'ン':['nn','n'],
-  'ガ':['ga'],'ギ':['gi'],'グ':['gu'],'ゲ':['ge'],'ゴ':['go'],
-  'ザ':['za'],'ジ':['zi','ji'],'ズ':['zu'],'ゼ':['ze'],'ゾ':['zo'],
-  'ダ':['da'],'デ':['de'],'ド':['do'],
-  'バ':['ba'],'ビ':['bi'],'ブ':['bu'],'ベ':['be'],'ボ':['bo'],
-  'パ':['pa'],'ピ':['pi'],'プ':['pu'],'ペ':['pe'],'ポ':['po'],
-  'キャ':['kya'],'キュ':['kyu'],'キョ':['kyo'],
-  'シャ':['sha','sya'],'シュ':['shu','syu'],'ショ':['sho','syo'],
-  'チャ':['cha','tya'],'チュ':['chu','tyu'],'チョ':['cho','tyo'],
-  'ニャ':['nya'],'ニュ':['nyu'],'ニョ':['nyo'],
-  'ヒャ':['hya'],'ヒュ':['hyu'],'ヒョ':['hyo'],
-  'ミャ':['mya'],'ミュ':['myu'],'ミョ':['myo'],
-  'リャ':['rya'],'リュ':['ryu'],'リョ':['ryo'],
-  'ギャ':['gya'],'ギュ':['gyu'],'ギョ':['gyo'],
-  'ジャ':['ja','jya','zya'],'ジュ':['ju','jyu','zyu'],'ジョ':['jo','jyo','zyo'],
-  'ビャ':['bya'],'ビュ':['byu'],'ビョ':['byo'],
-  'ピャ':['pya'],'ピュ':['pyu'],'ピョ':['pyo'],
-  'ファ':['fa'],'フィ':['fi'],'フェ':['fe'],'フォ':['fo'],
-  'ッ':['ltu','xtu'],'ー':['_','-'],
+// ========== PRODUCT DATABASE ==========
+const PRODUCTS = {
+  '4901085616888': { name: 'コカ・コーラ 500ml', price: 160 },
+  '4902102072458': { name: 'お~いお茶 緑茶 600ml', price: 140 },
+  '4548779196283': { name: 'ポテトチップス うすしお', price: 148 },
+  '4901201123573': { name: 'チョコレートアイス', price: 230 },
+  '4901085624784': { name: 'ミネラルウォーター 2L', price: 98 },
+  '4902102053563': { name: '抹茶ラテ 250ml', price: 130 },
+  '4549741101069': { name: 'おにぎり 梅', price: 148 },
+  '4901085618479': { name: 'カップヌードル', price: 230 },
+  '4549741150042': { name: 'サンドイッチ ハム', price: 298 },
+  '4902430359597': { name: 'ガム クールミント', price: 150 },
+  '0049000028911': { name: 'Coca-Cola Classic', price: 180 },
+  '5449000000996': { name: 'Sprite 330ml', price: 160 },
+  // Demo barcodes
+  '123456789012': { name: 'サンプル商品A', price: 100 },
+  '234567890123': { name: 'サンプル商品B', price: 200 },
+  '345678901234': { name: 'サンプル商品C', price: 300 },
 };
 
-function kanaToVariants(kana){
-  const variants=[''];
-  let i=0;
-  while(i<kana.length){
-    let matched=false;
-    if(i+1<kana.length){
-      const two=kana[i]+kana[i+1];
-      if(KANA_MAP[two]){
-        const nv=[];
-        for(const v of variants)for(const r of KANA_MAP[two])nv.push(v+r);
-        variants.length=0;variants.push(...nv);
-        i+=2;matched=true;
-      }
-    }
-    if(!matched){
-      const ch=kana[i];
-      if((ch==='っ'||ch==='ッ')&&kana[i+1]){
-        const nk=KANA_MAP[kana[i+1]]||KANA_MAP[kana[i+1]+(kana[i+2]||'')];
-        const cons=[];
-        if(nk)for(const r of nk)if(r[0]&&!'aeiou'.includes(r[0]))cons.push(r[0]);
-        if(cons.length){
-          const nv=[];
-          for(const v of variants)for(const c of[...new Set(cons)])nv.push(v+c);
-          variants.length=0;variants.push(...nv);
-          i++;matched=true;
-        }
-      }
-      if(!matched){
-        if(KANA_MAP[ch]){
-          const nv=[];
-          for(const v of variants)for(const r of KANA_MAP[ch])nv.push(v+r);
-          variants.length=0;variants.push(...nv);
-        }else{
-          for(let j=0;j<variants.length;j++)variants[j]+=ch;
-        }
-        i++;
-      }
-    }
+// ========== STATE ==========
+let cart = [];
+let paymentAmount = '';
+let cameraActive = false;
+
+// ========== CLOCK ==========
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('ja-JP');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ========== CART ==========
+function addProduct(barcode) {
+  barcode = barcode.trim();
+  if (!barcode) return;
+
+  const product = PRODUCTS[barcode];
+  if (!product) {
+    showToast(`商品が見つかりません: ${barcode}`, 'error');
+    return;
   }
-  return[...new Set(variants)];
+
+  const existing = cart.find(i => i.barcode === barcode);
+  if (existing) {
+    existing.qty++;
+  } else {
+    cart.push({ barcode, ...product, qty: 1 });
+  }
+  renderCart();
+  showToast(`追加: ${product.name}`, 'success');
 }
 
-const XP_TABLE=[0,5,8,10,12,15,18,20,22,25];
-const GAME_TIME=30;
-const ALL_WORDS=[
-  {w:'ひ',l:1},{w:'め',l:1},{w:'て',l:1},{w:'に',l:1},{w:'か',l:1},
-  {w:'ねこ',l:1},{w:'いぬ',l:1},{w:'あめ',l:1},{w:'うみ',l:1},{w:'きく',l:1},
-  {w:'みず',l:2},{w:'そら',l:2},{w:'はな',l:2},{w:'つき',l:2},{w:'かぜ',l:2},
-  {w:'ゆき',l:2},{w:'やま',l:2},{w:'しろ',l:2},{w:'くも',l:2},{w:'ひかり',l:2},
-  {w:'さくら',l:3},{w:'でんき',l:3},{w:'たべる',l:3},{w:'あそぶ',l:3},{w:'きれい',l:3},
-  {w:'むらさき',l:3},{w:'ひらがな',l:3},{w:'かたかな',l:3},{w:'しんかい',l:3},{w:'おてら',l:3},
-  {w:'とうきょう',l:4},{w:'にほんご',l:4},{w:'べんきょう',l:4},{w:'おんがく',l:4},{w:'でんしゃ',l:4},
-  {w:'プログラム',l:4},{w:'タイピング',l:4},{w:'コンピュータ',l:4},{w:'インターネット',l:4},{w:'りょうり',l:4},
-  {w:'しんかんせん',l:5},{w:'おもしろい',l:5},{w:'すばらしい',l:5},{w:'ふじさん',l:5},{w:'きゅうきゅうしゃ',l:5},
-  {w:'ありがとうございます',l:6},{w:'おはようございます',l:6},{w:'よろしくおねがいします',l:6},{w:'たんじょうびおめでとう',l:6},{w:'ちょっとまってください',l:6},
-];
-
-let G={};
-
-function initState(){
-  G={running:false,paused:false,score:0,combo:0,miss:0,correct:0,totalKeys:0,level:1,xp:0,timer:GAME_TIME,pool:[],wordIdx:0,words:[],current:null,interval:null};
+function changeQty(barcode, delta) {
+  const item = cart.find(i => i.barcode === barcode);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.barcode !== barcode);
+  renderCart();
 }
 
-function wordsForLevel(lv){
-  const mn=Math.max(1,lv-1),mx=Math.min(6,lv+1);
-  return ALL_WORDS.filter(w=>w.l>=mn&&w.l<=mx);
+function removeItem(barcode) {
+  cart = cart.filter(i => i.barcode !== barcode);
+  renderCart();
 }
 
-function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
-
-function buildPool(){G.pool=shuffle(wordsForLevel(G.level));G.wordIdx=0;}
-
-function nextWord(){
-  if(G.wordIdx>=G.pool.length)buildPool();
-  const w=G.pool[G.wordIdx++];
-  return{...w,variants:kanaToVariants(w.w)};
+function clearAll() {
+  cart = [];
+  paymentAmount = '';
+  document.getElementById('payment-input').value = '';
+  renderCart();
+  updateChange();
 }
 
-function startGame(){
-  document.getElementById('start-scr').style.display='none';
-  document.getElementById('result-scr').style.display='none';
-  document.getElementById('confirm-scr').style.display='none';
-  document.getElementById('esc-hint').style.display='inline';
-  initState();
-  G.running=true;
-  buildPool();
-  G.words=[nextWord(),nextWord(),nextWord(),nextWord(),nextWord()];
-  G.current=G.words[0];
-  renderAll();
-  const inp=document.getElementById('inp');
-  inp.value='';inp.focus();
-  clearInterval(G.interval);
-  G.interval=setInterval(tick,100);
+function renderCart() {
+  const body = document.getElementById('cart-body');
+  const table = document.getElementById('cart-table');
+  const emptyMsg = document.getElementById('empty-msg');
+
+  if (cart.length === 0) {
+    table.style.display = 'none';
+    emptyMsg.style.display = 'flex';
+    updateTotals(0, 0, 0);
+    return;
+  }
+
+  table.style.display = 'table';
+  emptyMsg.style.display = 'none';
+
+  body.innerHTML = cart.map(item => {
+    const subtotal = item.price * item.qty;
+    return `
+      <tr>
+        <td>
+          <div class="item-name">${item.name}</div>
+          <div class="item-code">${item.barcode}</div>
+        </td>
+        <td>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="changeQty('${item.barcode}',-1)">−</button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty('${item.barcode}',1)">＋</button>
+          </div>
+        </td>
+        <td class="price-cell">¥${item.price.toLocaleString()}</td>
+        <td class="price-cell">¥${subtotal.toLocaleString()}</td>
+        <td><button class="del-btn" onclick="removeItem('${item.barcode}')">✕</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax = Math.round(subtotal * 0.1);
+  const total = subtotal + tax;
+  const count = cart.reduce((s, i) => s + i.qty, 0);
+  updateTotals(subtotal, tax, total, count);
+  updateChange();
 }
 
-function tick(){
-  if(G.paused)return;
-  G.timer-=0.1;
-  if(G.timer<=0){G.timer=0;endGame();return;}
-  const pct=(G.timer/GAME_TIME)*100;
-  const tf=document.getElementById('tf');
-  tf.style.width=Math.round(pct)+'%';
-  tf.className='timer-fill'+(pct<20?' danger':pct<40?' warn':'');
+function updateTotals(subtotal, tax, total, count = 0) {
+  document.getElementById('subtotal').textContent = `¥${subtotal.toLocaleString()}`;
+  document.getElementById('tax').textContent = `¥${tax.toLocaleString()}`;
+  document.getElementById('total').textContent = `¥${total.toLocaleString()}`;
+  document.getElementById('item-count').textContent = `${count}点`;
+
+  const btn = document.getElementById('checkout-btn');
+  btn.disabled = total === 0;
 }
 
-function renderAll(){
-  document.getElementById('sc').textContent=G.score;
-  document.getElementById('cb').textContent=G.combo;
-  document.getElementById('ms').textContent=G.miss;
-  const xpN=XP_TABLE[Math.min(G.level,XP_TABLE.length-1)]||25;
-  document.getElementById('lv-num').textContent=G.level;
-  document.getElementById('lv-bar').style.width=Math.min(100,Math.round((G.xp/xpN)*100))+'%';
-  document.getElementById('lv-xp').textContent=G.xp+'/'+xpN;
-  document.getElementById('kana').textContent=G.current.w;
-  document.getElementById('hint-lv').textContent='単語 Lv.'+G.current.l;
-  renderAccepted('');renderRomaji('');renderUpcoming();
+// ========== NUMPAD ==========
+function numpad(val) {
+  if (val === 'C') {
+    paymentAmount = '';
+  } else {
+    if (paymentAmount.length >= 8) return;
+    paymentAmount += val;
+  }
+  document.getElementById('payment-input').value =
+    paymentAmount ? Number(paymentAmount).toLocaleString() : '';
+  updateChange();
 }
 
-function renderAccepted(typed){
-  const el=document.getElementById('acc-row');
-  el.innerHTML='';
-  const shown=G.current.variants.slice(0,6);
-  for(const v of shown){
-    const d=document.createElement('div');
-    d.className='acc-chip'+(v.startsWith(typed)&&typed.length>0?' match':'');
-    d.textContent=v;
-    el.appendChild(d);
+function updateChange() {
+  const total = getTotal();
+  const paid = Number(paymentAmount) || 0;
+  const change = paid - total;
+  const el = document.getElementById('change');
+  el.textContent = `¥${Math.max(0, change).toLocaleString()}`;
+  el.className = 'change-val' + (change < 0 && paid > 0 ? ' negative' : '');
+}
+
+function getTotal() {
+  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  return subtotal + Math.round(subtotal * 0.1);
+}
+
+// ========== CHECKOUT ==========
+function checkout() {
+  const total = getTotal();
+  if (total === 0) return;
+  const paid = Number(paymentAmount) || 0;
+  if (paid < total) {
+    showToast('お預かり金額が不足しています', 'error');
+    return;
+  }
+  const change = paid - total;
+
+  document.getElementById('ok-total').textContent = `¥${total.toLocaleString()}`;
+  document.getElementById('ok-payment').textContent = `¥${paid.toLocaleString()}`;
+  document.getElementById('ok-change').textContent = `¥${change.toLocaleString()}`;
+
+  document.getElementById('ok-modal').classList.add('active');
+}
+
+function nextCustomer() {
+  document.getElementById('ok-modal').classList.remove('active');
+  clearAll();
+  document.getElementById('barcode-input').focus();
+}
+
+// ========== BARCODE INPUT ==========
+document.getElementById('barcode-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const val = e.target.value;
+    e.target.value = '';
+    addProduct(val);
+  }
+});
+
+// ========== CAMERA BARCODE ==========
+function toggleCamera() {
+  if (cameraActive) {
+    closeCamera();
+  } else {
+    openCamera();
   }
 }
 
-function renderRomaji(typed){
-  const candidates=G.current.variants.filter(v=>v.startsWith(typed));
-  const best=candidates[0]||G.current.variants[0];
-  const n=typed.length;
-  document.getElementById('rom').innerHTML=
-    '<span class="rt">'+best.slice(0,n)+'</span>'+
-    '<span class="rc">'+(best[n]||'')+'</span>'+
-    '<span class="rr">'+best.slice(n+1)+'</span>';
-}
+function openCamera() {
+  document.getElementById('camera-modal').classList.add('active');
+  document.getElementById('cam-btn').classList.add('active');
+  document.getElementById('scan-status').textContent = 'カメラを起動中...';
+  document.getElementById('scan-status').className = 'scan-status';
 
-function renderUpcoming(){
-  const el=document.getElementById('upcoming');
-  el.innerHTML='';
-  G.words.forEach((w,i)=>{
-    const d=document.createElement('div');
-    d.className='chip'+(i===0?' cur':'');
-    d.textContent=w.variants[0];
-    el.appendChild(d);
+  Quagga.init({
+    inputStream: {
+      name: 'Live',
+      type: 'LiveStream',
+      target: document.getElementById('camera-container'),
+      constraints: {
+        facingMode: 'environment',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+    },
+    decoder: {
+      // EAN/UPCに絞ることで誤検出を大幅に減らす
+      readers: ['ean_reader', 'ean_8_reader', 'upc_reader', 'upc_e_reader'],
+      multiple: false,
+    },
+    locate: true,
+    locator: {
+      patchSize: 'large',   // largeで精度向上
+      halfSample: false,    // 解像度を落とさない
+    },
+    frequency: 10,          // 毎秒10フレーム処理
+  }, err => {
+    if (err) {
+      document.getElementById('scan-status').textContent =
+        '❌ カメラのアクセスに失敗しました: ' + err.message;
+      document.getElementById('scan-status').className = 'scan-status';
+      console.error(err);
+      return;
+    }
+    Quagga.start();
+    cameraActive = true;
+    document.getElementById('scan-status').textContent = '📷 バーコードをカメラに向けてください';
+  });
+
+  // 同じコードが3フレーム連続で一致したら確定（誤読防止）
+  const CONFIRM_COUNT = 3;
+  let voteMap = {};
+  let confirmed = false;
+
+  Quagga.onDetected(result => {
+    if (confirmed) return;
+
+    // 確信度チェック：エラー率が高いフレームは捨てる
+    const errors = result.codeResult.decodedCodes
+      .filter(c => c.error !== undefined)
+      .map(c => c.error);
+    if (errors.length > 0) {
+      const avgError = errors.reduce((a, b) => a + b, 0) / errors.length;
+      if (avgError > 0.20) return; // 誤差20%超は無視
+    }
+
+    const code = result.codeResult.code;
+
+    // 数字のみ・8桁/12桁/13桁のEAN・UPC以外は捨てる
+    if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(code)) return;
+
+    voteMap[code] = (voteMap[code] || 0) + 1;
+    const count = voteMap[code];
+    const progress = Math.min(count, CONFIRM_COUNT);
+
+    document.getElementById('scan-status').textContent =
+      `🔍 読み取り中: ${code}  [${'█'.repeat(progress)}${'░'.repeat(CONFIRM_COUNT - progress)}]`;
+    document.getElementById('scan-status').className = 'scan-status';
+
+    if (count >= CONFIRM_COUNT) {
+      confirmed = true;
+      voteMap = {};
+      document.getElementById('scan-status').textContent = `✅ 読み取り完了: ${code}`;
+      document.getElementById('scan-status').className = 'scan-status detected';
+
+      // 1秒待ってからカメラを閉じて商品追加
+      setTimeout(() => {
+        closeCamera();
+        addProduct(code);
+      }, 1000);
+    }
   });
 }
 
-function gainXP(amount){
-  G.xp+=amount;
-  const needed=XP_TABLE[Math.min(G.level,XP_TABLE.length-1)]||25;
-  if(G.xp>=needed&&G.level<10){G.xp-=needed;G.level++;buildPool();
-    const el=document.getElementById('kana');el.style.color='#b899ff';
-    setTimeout(()=>{el.style.color='#fff';},400);
+function closeCamera() {
+  if (cameraActive) {
+    Quagga.stop();
+    cameraActive = false;
   }
+  document.getElementById('camera-modal').classList.remove('active');
+  document.getElementById('cam-btn').classList.remove('active');
+  document.getElementById('scan-status').textContent = 'カメラを起動中...';
 }
 
-function spawnPts(pts){
-  const app=document.getElementById('app');
-  const p=document.createElement('div');
-  p.className='pts-pop';p.textContent='+'+pts;
-  p.style.left=(160+Math.random()*220)+'px';p.style.top='190px';
-  app.appendChild(p);setTimeout(()=>p.remove(),750);
+// ========== TOAST ==========
+function showToast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2800);
 }
 
-function showConfirm(){
-  G.paused=true;
-  document.getElementById('confirm-scr').style.display='flex';
-  document.getElementById('inp').blur();
-}
-
-function cancelQuit(){
-  G.paused=false;
-  document.getElementById('confirm-scr').style.display='none';
-  document.getElementById('inp').focus();
-}
-
-function confirmQuit(){
-  clearInterval(G.interval);
-  G.running=false;G.paused=false;
-  document.getElementById('confirm-scr').style.display='none';
-  document.getElementById('esc-hint').style.display='none';
-  document.getElementById('start-scr').style.display='flex';
-  document.getElementById('tf').style.width='100%';
-  document.getElementById('tf').className='timer-fill';
-  document.getElementById('kana').textContent='—';
-  document.getElementById('rom').innerHTML='';
-  document.getElementById('acc-row').innerHTML='';
-  document.getElementById('upcoming').innerHTML='';
-  document.getElementById('inp').value='';
-}
-
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){
-    e.preventDefault();
-    if(G.running&&!G.paused){showConfirm();return;}
-    if(G.paused){cancelQuit();return;}
-  }
-  if(e.key===' '){
-    const startScr=document.getElementById('start-scr');
-    const resultScr=document.getElementById('result-scr');
-    if(startScr.style.display!=='none'||resultScr.style.display!=='none'){
-      e.preventDefault();
-      startGame();
-      return;
-    }
+// ========== KEYBOARD SHORTCUT ==========
+document.addEventListener('keydown', e => {
+  if (e.key === 'F1') { e.preventDefault(); document.getElementById('barcode-input').focus(); }
+  if (e.key === 'F2') { e.preventDefault(); toggleCamera(); }
+  if (e.key === 'F12') { e.preventDefault(); checkout(); }
+  if (e.key === 'Escape') {
+    closeCamera();
+    document.getElementById('ok-modal').classList.remove('active');
   }
 });
 
-const inp=document.getElementById('inp');
-inp.addEventListener('keydown',function(e){
-  if(e.key==='Escape')e.preventDefault();
-});
-
-inp.addEventListener('input',function(){
-  if(!G.running||G.paused)return;
-  const val=this.value.toLowerCase();
-  G.totalKeys++;
-  const variants=G.current.variants;
-  const partial=variants.some(v=>v.startsWith(val));
-  const exact=variants.some(v=>v===val);
-  if(partial){
-    this.classList.remove('err');
-    renderRomaji(val);renderAccepted(val);
-    if(exact){
-      G.combo++;G.correct++;gainXP(G.current.l);
-      const bonus=Math.floor(G.combo/3);
-      const pts=(G.current.l*10)+(bonus*5);
-      G.score+=pts;
-      G.timer=Math.min(GAME_TIME,G.timer+1.5);
-      spawnPts(pts);
-      const kEl=document.getElementById('kana');
-      kEl.classList.remove('shake','ok');void kEl.offsetWidth;kEl.classList.add('ok');
-      G.words.shift();G.words.push(nextWord());G.current=G.words[0];
-      this.value='';renderAll();
-    }
-  }else{
-    this.classList.add('err');
-    G.miss++;G.combo=0;
-    document.getElementById('cb').textContent=0;
-    document.getElementById('ms').textContent=G.miss;
-    const kEl=document.getElementById('kana');
-    kEl.classList.remove('shake','ok');void kEl.offsetWidth;kEl.classList.add('shake');
-    setTimeout(()=>this.classList.remove('err'),380);
-    this.value='';renderRomaji('');renderAccepted('');
-  }
-});
-
-function endGame(){
-  clearInterval(G.interval);G.running=false;
-  document.getElementById('esc-hint').style.display='none';
-  inp.blur();
-  document.getElementById('fin-sc').textContent=G.score;
-  document.getElementById('fin-lv').textContent='Lv.'+G.level+' 到達';
-  document.getElementById('r-cor').textContent=G.correct;
-  document.getElementById('r-mis').textContent=G.miss;
-  const tot=G.correct+G.miss;
-  const acc=tot>0?Math.round((G.correct/tot)*100):0;
-  document.getElementById('r-acc').textContent=acc+'%';
-  const ranks=[[200,'👑 神レベル'],[120,'⭐ すごい！'],[70,'👍 よくできました'],[30,'💪 もっとがんばれ'],[0,'🌱 練習あるのみ']];
-  let rank=ranks[ranks.length-1][1];
-  for(const[t,l]of ranks){if(G.score>=t){rank=l;break;}}
-  document.getElementById('rank-txt').textContent=rank;
-  document.getElementById('result-scr').style.display='flex';
-}
+// init
+renderCart();
+document.getElementById('barcode-input').focus();
 </script>
-
 </body>
 </html>
